@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Run in directory of interest
+
+# identify input files and output locations
+echo "Enter names of input files (space-separate and maintain order w/ multiple files) and output location"
+read -p 'Read 1 input (Barcode + UMI):' read1input
+read -p 'Read 2 input (Barcode + UMI):' read2input
+read -p 'Output ID:' outputid
+
+# Activate salmon
+source activate salmon
+echo "Salmon activated"
+
+# Perform quasi-mapping (producing CSV quant file)
+salmon alevin -l ISR
+-1 read1input -2 read2input
+--chromium -i map_index -p 8 -o outputid --tgMap txp2gene.tsv --dumpCsvCounts

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Run in directory of interest
+
+# Download the GENCODE GRCm38.p6 primary assembly protein coding sequences
+wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M18/gencode.vM18.pc_translations.fa.gz
+echo "Primary Assembly Downloaded"
+
+# Download the GENCODE GRCm38.p6 primary assembly annotation (for Alevin and tximport)
+wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M18/gencode.vM18.primary_assembly.annotation.gtf.gz
+echo "Transcript to Gene Mapping Downloaded"
+
+# Convert the annotation into a list for transcript to gene mapping (gene-level quantification)
+bioawk -c gff '$feature=="transcript" {print $group}' gencode.vM18.primary_assembly.annotation.gtf.gz | awk -F ' ' '{print substr($4,2,length($4)-3) "\t" substr($2,2,length($2)-3)}' - > txp2gene.tsv
+echo "Annotation Converted"
+
+# Convert protein coding sequences into a reference transcriptome index
+source activate salmon
+salmon index -i map_index -k 31 --gencode -p 4 -t gencode.vM18.pc_transcripts.fa.gz
+echo "Reference Transcriptome Indexed"
