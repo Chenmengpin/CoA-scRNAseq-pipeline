@@ -13,6 +13,4 @@ source activate salmon
 echo "Salmon activated"
 
 # Perform quasi-mapping (producing CSV quant file)
-salmon alevin -l ISR
--1 read1input -2 read2input
---chromium -i map_index -p 8 -o outputid --tgMap txp2gene.tsv --dumpCsvCounts
+salmon alevin -l ISR -1 read1input -2 read2input --chromium -i map_index -p 8 -o outputid --tgMap txp2gene.tsv --dumpCsvCounts
