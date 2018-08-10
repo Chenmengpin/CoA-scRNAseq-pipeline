@@ -36,4 +36,3 @@ vignettes/*.pdf
 rsconnect/
 .Rproj.user
 packrat/lib*/
-packrat/src/
