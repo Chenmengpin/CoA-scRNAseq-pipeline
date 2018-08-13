@@ -25,12 +25,11 @@ AssembleArrays <- function(quant_csv, gene_ids, batch_id, sample_id, region_id, 
   metadata_array$method <- method_id
   assign(paste0("quant_array_batch",batch_id,"_sample",sample_id), quant_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
   assign(paste0("metadata_array_batch",batch_id,"_sample",sample_id), metadata_array, env = .GlobalEnv)
-  assign(paste0("unfiltered_quant_array_batch",batch_id,"_sample",sample_id), quant_array, env = .GlobalEnv)  # these are stored so all metadata can be saved from all cells
-  assign(paste0("unfiltered_metadata_array_batch",batch_id,"_sample",sample_id), metadata_array, env = .GlobalEnv)
+  assign(paste0("QC_metadata_array_batch",batch_id,"_sample",sample_id), metadata_array, env = .GlobalEnv)
 }
 
 # Empty droplet QC for 10X data
-EDQC10X <- function(q_array, m_array, id, unfiltered_q_array, unfiltered_m_array) {
+EDQC10X <- function(q_array, m_array, id, qc_m_array) {
   cell_ids <- rownames(q_array)   # these ensure cell and gene info survives matrix transformation
   gene_ids <- colnames(q_array)
   q_array <- t(q_array)
@@ -42,12 +41,9 @@ EDQC10X <- function(q_array, m_array, id, unfiltered_q_array, unfiltered_m_array
   q_array <- q_array[pass_emptydrop_qc == TRUE,]   # filters on droplet UMI amount, removes empty droplets
   m_array <- m_array[pass_emptydrop_qc == TRUE,]
   assign(paste0("edqc_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
-  assign(paste0("edqc_quant_",id), m_array, env = .GlobalEnv)
-  print("Beginning repeat for metadata annotation")
-  unfiltered_q_array <- t(unfiltered_q_array)   # repeat to produce full metadata list containing all cells
-  analysis <- emptyDrops(unfiltered_q_array)
-  print("Empty droplets modeled for metadata")
-  pass_emptydrop_qc <- !is.na(analysis@listData[["Total"]])
-  unfiltered_m_array <- cbind.data.frame(unfiltered_m_array, pass_emptydrop_qc)
-  assign(paste0("unfiltered_metadata_",id), unfiltered_m_array, env = .GlobalEnv)
+  assign(paste0("edqc_metadata_",id), m_array, env = .GlobalEnv)
+  print("Beginning metadata QC annotation")
+  pass_emptydrop_qc <- is.element(rownames(qc_m_array), rownames(m_array))
+  qc_m_array <- cbind.data.frame(qc_m_array, pass_emptydrop_qc)
+  assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
 }
