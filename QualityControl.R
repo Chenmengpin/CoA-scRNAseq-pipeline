@@ -10,13 +10,13 @@ CellQC <- function(q_array, m_array, id, qc_m_array) {
   library_qc <- !isOutlier(library_size, nmads = 3, type = "lower", log = TRUE)  # best to use negated versions for metadata import
   gene_qc <- !isOutlier(geneset_size, nmads = 3, type = "lower", log = TRUE)
   m_array <- cbind.data.frame(m_array, library_size, geneset_size)   # add all library and geneset info to metadata
-  q_array <- q_array[library_qc == TRUE & gene_qc == TRUE,]   # dual filters on library and geneset size, needs to pass both
-  library_m_array <- m_array[library_qc == TRUE,]
+  q_array <- q_array[library_qc == TRUE & gene_qc == TRUE,]   # dual filters on library and geneset size, needs to pass both simultaneously here
+  library_m_array <- m_array[library_qc == TRUE,] # these need to be separated so there can be a separate library size column in the QC array
   m_array <- library_m_array[gene_qc == TRUE,]
   assign(paste0("cellqc_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
   assign(paste0("GCqc_metadata_",id), m_array, env = .GlobalEnv)
   print("Beginning metadata QC annotation")
-  pass_library_qc <- is.element(rownames(qc_m_array), rownames(library_m_array))  
+  pass_library_qc <- is.element(rownames(qc_m_array), rownames(library_m_array))  # this is why there cannot be a simultaneous dual filter on library and geneset size
   pass_gene_qc <- is.element(rownames(qc_m_array), rownames(m_array))
   qc_m_array <- cbind.data.frame(qc_m_array, pass_library_qc, pass_gene_qc)
   assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
@@ -24,9 +24,24 @@ CellQC <- function(q_array, m_array, id, qc_m_array) {
 
 # Gene-level quality control
 GeneQC <- function(q_array, id) {
-  cells_per_gene <- as.vector(colSums(q_array != 0))
+  q_array <- as.data.frame(t(rowsum(t(q_array), group = rownames(t(q_array)))))   # collate duplicate genes
+  print("Duplicates removed")
+  gene_metadata <- data.frame(matrix(0, nrow = ncol(q_array), ncol = 4), row.names = colnames(q_array))   # makes metadata array with slots for all metrics
+  colnames(gene_metadata) <- c("mean_nontransformed_expression", "mean_transformed_expression", "cells_per_gene", "pass_cellnumber_qc")
+  mean_nontransformed_expression <- as.vector(colMeans(q_array))
+  mean_transformed_expression <- log2(mean_nontransformed_expression + 1)
+  gene_metadata[,1] <- mean_nontransformed_expression
+  gene_metadata[,2] <- mean_transformed_expression
+  print("Mean expression counted")
+  cells_per_gene <- as.vector(colSums(q_array != 0))  # finds number of cells without zero counts for gene
+  gene_metadata[,3] <- cells_per_gene
+  print("Amount of cells expressing calculated")
+  pass_cellnumber_qc <- cells_per_gene >= 3
+  gene_metadata[,4] <- pass_cellnumber_qc
   q_array <- q_array[, cells_per_gene >= 3]
+  print("QC finished")
   assign(paste0("geneqc_quant_",id), q_array, env = .GlobalEnv)
+  assign(paste0("gene_metadata_",id), gene_metadata, env = .GlobalEnv)
 }
 
 # Scaling by size factor
@@ -53,6 +68,7 @@ NormalizeCountData <- function(q_array, m_array, id, qc_m_array) {
   m_array <- m_array[size_factors > 0,]
   q_array <- q_array + 1  # prevents undefined values for zeroes in log transformation
   q_array <- log2(q_array)  # log-transforms data to account for heteroscedasticity, log2 used because it is fine-grained and easy to represent fold changes
+  m_array <- cbind.data.frame(m_array, size_factors[size_factors > 0])
   assign(paste0("normalized_quant_",id), q_array, env = .GlobalEnv)  # returns original quant array identifier with modifier indicating normalization
   assign(paste0("normalized_metadata_",id), m_array, env = .GlobalEnv)
   print("Beginning metadata QC annotation")
