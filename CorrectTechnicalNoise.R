@@ -61,12 +61,18 @@ ImputeDropouts <- function(q_array, id) {
                       dists = c("spearman", "pearson", "euclidean")) # maximize number of distributions for better consensus
   q_array <- data.frame(t(q_array), row.names = cell_ids) # returns to metadata-compatible format
   colnames(q_array) <- gene_ids
-  assign(paste0("imputed_quant_",id), q_array, env = .GlobalEnv)  # returns original quant array identifier with modifier indicating normalization
+  assign(paste0("imputed_quants",id), q_array, env = .GlobalEnv)  # returns original quant array identifier with modifier indicating normalization
 }
 
 # Filter down to highly variable genes for SC3 and edgeR
-FilterHVG <- function(q_array, spike_ins) {
-  q_array <- t(q_array)
-  hvg_array <- improvedCV2(q_array, is.spike = spike_ins, log.prior = 1)
-  assign("HVGs_quant", hvg_array, env = .GlobalEnv)
+FilterHVG <- function(q_array, spike_ins, gene_m_array) {
+  q_array_cv2 <- t(q_array)
+  hvg_array <- improvedCV2(q_array_cv2, is.spike = spike_ins, log.prior = 1)
+  q_array <- q_array[, hvg_array$p.value < .05]
+  assign("HVG_quants", q_array, env = .GlobalEnv)
+  gene_m_array$row <- rownames(gene_m_array)    # add a 'helper' column for the merge function.
+  hvg_array$row <- rownames(hvg_array)
+  gene_m_array <- merge(gene_m_array, hvg_array, by='row', all=TRUE)
+  gene_m_array <- gene_m_array[, -c(1, 6, 7, 9)]
+  assign("HVGs_unified_gene_metadata", gene_m_array, env = .GlobalEnv)
 }

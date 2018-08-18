@@ -4,6 +4,7 @@ rm(list = ls())   # Reset the environment, remove all old values before beginnin
 # Load all packages needed for the pipeline
 library(biomaRt)  # for matching Ensembl/GENCODE IDs to gene names
 library(tximport)   # does gene-level estimation for C1 data
+library(edgeR) # does differential gene expression analysis
 library(DropletUtils)   # for 10X data preprocessing
 library(scran)  # for quality control of single cell data
 library(scater)   # for quality control of single cell data
@@ -14,3 +15,9 @@ library(RcisTarget)   # step 2 of SCENIC, identifies transcription factor bindin
 library(AUCell)   # step 3 of SCENIC, for identifying gene set enrichment
 library(Rtsne)  # produces tSNE coordinates for visualization
 library(SC3)  # for clustering on gene expression
+library(WGCNA)  # finding weighted gene correlation networks
+library(ggplot2)  # for making plots
+
+# needed for WGCNA to work
+options(stringsAsFactors = FALSE)
+# enableWGCNAThreads(nThreads = 8)  # massively speeds up WGCNA, does not yet work in RStudio
