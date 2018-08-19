@@ -23,7 +23,9 @@ DGE_edgeR <- function(q_array, cluster_id) {
   print("Model fitting done")
   for (i in 1:nlevels(cluster_id)) {
     DEresults_logFC <- data.frame(rownames(q_array))
+    rownames(DEresults_logFC) <- DEresults_logFC[,1]
     DEresults_PValue <- data.frame(rownames(q_array))
+    rownames(DEresults_PValue) <- DEresults_PValue[,1]
     DEresults_coln <- "Gene"
     print(paste("Set of comparisons for cluster", i))
     selected_cluster <- as.character(i)
@@ -36,21 +38,25 @@ DGE_edgeR <- function(q_array, cluster_id) {
       print("Running tests")
       qlf_test <- glmQLFTest(fit_model, contrast = contrast)
       print("Tests done")
-      newCompPV <- data.frame(qlf_test$table$PValue)
-      cbind.data.frame(DEresults_PValue, newCompPV)
-      newCompFC <- data.frame(qlf_test$table$logFC)
-      cbind.data.frame(DEresults_logFC, newCompFC)
+      newCompPV <- as.vector(qlf_test$table$PValue)
+      DEresults_PValue <- cbind.data.frame(DEresults_PValue, newCompPV)
+      newCompFC <- as.vector(qlf_test$table$logFC)
+      DEresults_logFC <- cbind.data.frame(DEresults_logFC, newCompFC)
       DEresults_coln <- c(DEresults_coln, paste0(i, "_vs_", j))
     }
     colnames(DEresults_PValue) <- DEresults_coln
+    DEresults_PValue <- DEresults_PValue[,-1] 
     colnames(DEresults_logFC) <- DEresults_coln
+    DEresults_logFC <- DEresults_logFC[,-1] 
     for (m in 1:nrow(DEresults_PValue)) {
       print(m)
       DEresults_PValue[m,] <- p.adjust(DEresults_PValue[m,], method = "BH")
     }
     DEresults_PValue$SigComps <- rowSums(DEresults_PValue < .05)  
     DEG_PValue[[i]] <- DEresults_PValue
+    names(DEG_PValue)[i] <- paste0("PValue_Cluster_", i)
     DEG_logFC[[i]] <- DEresults_logFC
+    names(DEG_logFC)[i] <- paste0("logFC_Cluster_", i)
   }
   assign("DEG_PValue", DEG_PValue, env = .GlobalEnv)
   assign("DEG_logFC", DEG_logFC, env = .GlobalEnv)
