@@ -23,8 +23,8 @@ SC3clustering <- function(q_array) {
 }
 
 # Convert the SCESet output of SC3 into a consensus plot and assign clusters to metadata
-SC3Output <- function(sc3_clusters, clusters, m_array) {
-  SC3_ids <- as.character(sc3_input) 
+SC3Output <- function(sc3_input, sc3_clusters, clusters, m_array) {
+  SC3_ids <- as.character(sc3_clusters) 
   m_array <- cbind.data.frame(m_array, SC3_ids)
   assign(paste0("SC3_metadata"), m_array, env = .GlobalEnv)
   SC3_consensus_plot <- sc3_plot_consensus(sc3_input, 22)   # saves the SC3 plot so it can be returned

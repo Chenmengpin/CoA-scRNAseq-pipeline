@@ -1,0 +1,143 @@
+# Contains plotting functions to make all plots for use in figures
+
+# load all other functions
+source("setup.R")
+source("QualityControl.R")
+source("CorrectTechnicalNoise.R")
+source("Clustering.R")
+source("DifferentialGeneExpression.R")
+
+# plot amount of cells eliminated by each quality control measure
+PlotCellExclusionQC <- function(qc_m_array, group_id, colorlist) {
+  qc_m_array <- na.omit(qc_m_array)
+  summary <- qc_m_array %>%
+                group_by(qc_m_array[, group_id]) %>%
+                summarize(Initial <- length(Sample), 
+                          EmptyDroplets <- sum(pass_emptydrop_qc),
+                          LibrarySize <- sum(pass_library_qc),
+                          GenesetSize <- sum(pass_gene_qc),
+                          SizeFactors <- sum(pass_size_qc),
+                          Final <- sum(pass_size_qc))
+  colnames(summary) <- c("Group", "0", "1", "2", "3", "4", "5")
+  summary <- melt(summary)
+  summary$variable <- as.numeric(summary$variable) - 1
+  ggplot(data = summary, aes(x = variable, y = value, colour = Group)) + 
+    geom_step(na.rm = TRUE, size = 1) + 
+    scale_colour_manual(values = colorlist, name = colnames(qc_m_array[group_id])) +
+    scale_x_continuous(expand = c(0, 0), labels = c("Initial", "Empty Droplets", "Library Size", "Gene Detection", "Size Factors", "Final")) + 
+    scale_y_continuous(expand = c(0, 0), limits = c(0, (max(summary$value) * 1.1))) +
+    xlab("Quality control checks") + ylab("Number of cells passing QC") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+          legend.key=element_blank(), axis.line = element_line(colour = "black"))
+}
+
+# plot library sizes that were excluded based on QC
+PlotLibraryQC <- function(qc_m_array) {
+  qc_m_array$pass_library_qc <- ifelse(qc_m_array$pass_library_qc == TRUE, "Pass", "Low outlier in batch")
+  ggplot(data = qc_m_array, aes(library_size, fill = pass_library_qc)) +
+    geom_histogram(binwidth = 500, colour = "black") +
+    scale_fill_manual(values = c("red", "darkgrey"), name = "Library Size QC Check") +
+    scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
+    xlab("Total read depth (non-normalized)") + ylab("Number of cells") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+          legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom")
+}
+
+# plot geneset sizes that were excluded based on QC
+PlotGenesetQC <- function(qc_m_array) {
+  qc_m_array$pass_gene_qc <- ifelse(qc_m_array$pass_gene_qc == TRUE, "Pass", "Low outlier in batch")
+  ggplot(data = qc_m_array, aes(geneset_size, fill = pass_gene_qc)) +
+    geom_histogram(binwidth = 50, colour = "black") +
+    scale_fill_manual(values = c("red", "darkgrey"), name = "Gene Detection QC Check") +
+    scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
+    xlab("Number of genes detected") + ylab("Number of cells") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+          legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom")
+}
+
+# plot comparison between size of library and size factor
+PlotLibrarySizeFactorQC <- function(qc_m_array) {
+  qc_m_array$size_factor <- qc_m_array$size_factor + .01
+  qc_m_array$pass_size_qc <- ifelse(qc_m_array$pass_size_qc == TRUE, "Pass", "Non-positive size factor")
+  ggplot(data = qc_m_array, aes(x = size_factor, y = library_size, colour = pass_size_qc)) + 
+    geom_point(na.rm = TRUE, size = 1) + 
+    geom_point(aes(x = mean(size_factor), y = mean(library_size)), colour = "black", size = 3) +
+    scale_colour_manual(values = c("red", "darkgrey"), name = "Size Factor QC Check") +
+    scale_x_log10(expand = c(.01, 0)) + scale_y_log10(expand = c(.01, 0)) +
+    xlab("Size factor (X + 1e-2)") + ylab("Total read depth") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+          legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom")
+}
+
+# plot comparison between size of library and gene size
+PlotLibraryGenesQC <- function(m_array, group_id, colorlist) {
+  m_array <- na.omit(m_array)
+  summary <- m_array %>%
+                group_by(m_array[, group_id]) %>%
+                summarize(Mean_Library = mean(library_size),
+                          Mean_Geneset = mean(geneset_size))
+  colnames(summary)[1] <- "Group"
+  ggplot(data = m_array, aes(x = library_size, y = geneset_size, colour = m_array[, group_id])) + 
+    geom_point(na.rm = TRUE, size = 1) + 
+    geom_point(data = summary, aes(x = Mean_Library, y = Mean_Geneset, fill = Group), colour = "black", pch = 21, size = 5) +
+    scale_colour_manual(values = colorlist, name = colnames(m_array[group_id])) +
+    scale_fill_manual(values = colorlist, name = colnames(m_array[group_id])) +
+    scale_x_continuous(expand = c(.01, 0)) + scale_y_continuous(expand = c(.01, 0)) +
+    xlab("Total read depth (non-normalized)") + ylab("Genes detected") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+          legend.key=element_blank(), axis.line = element_line(colour = "black"))
+}
+
+# plot amount of genes passing each hurdle for each successive analysis
+PlotGeneExclusionQC <- function(HVG_gene_array) {
+  starting_genes <- length(HVG_gene_array$mean_nontransformed_expression)
+  cells_per_gene <- sum(HVG_gene_array$cells_per_gene >= 3)
+  common_genes <- sum(HVG_gene_array$pass_cellnumber_qc_every_batch)
+  HVG_gene_array[is.na(HVG_gene_array)] <- 1
+  highly_variable <- sum(HVG_gene_array$p.value < 0.05)
+  final_genes <- highly_variable
+  points <- c(0, 1, 2, 3, 4)
+  nums <- c(starting_genes, cells_per_gene, common_genes, highly_variable, final_genes)
+  summary <- cbind.data.frame(points, nums)
+  ggplot(data = summary, aes(x = points, y = nums)) + 
+    geom_step(na.rm = TRUE, size = 1) + 
+    scale_x_continuous(expand = c(0, 0), limits = c(0, (max(points) * 1.03)), labels = c("Initial", "At Least 3 Cells", "In All Datasets", "Highly Variable", "Final")) + 
+    scale_y_continuous(expand = c(0, 0), limits = c(0, (max(summary$nums) * 1.1))) +
+    xlab("Quality control checks") + ylab("Number of genes passing QC") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+          legend.key=element_blank(), axis.line = element_line(colour = "black"))
+}
+
+# plot the relationship between cells expressing a gene and its average expression
+PlotExpressionCellRelationship <- function(HVG_gene_array) {
+  HVG_gene_array[is.nan(HVG_gene_array)] <- 0
+  colnames(HVG_gene_array)[4] <- "Sufficient"
+  HVG_gene_array$Sufficient <- ifelse(HVG_gene_array$Sufficient == TRUE, "Yes", "No")
+  ggplot(data = HVG_gene_array, aes(x = mean_transformed_expression, y = cells_per_gene, colour = Sufficient)) +
+    geom_point(size = 1) +
+    #geom_smooth(aes(group = identity), method = "loess", colour = "red", se = TRUE) +
+    scale_colour_manual(values = c("red", "black")) +
+    scale_x_log10(expand = c(.01, 0)) + scale_y_log10(expand = c(.01, 0)) +
+    xlab("Mean normalized read count") + ylab("Number of cells") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+          legend.key=element_blank(), axis.line = element_line(colour = "black"))
+}
+
+# plot the genes that are highly variable
+PlotHVGs <- function(HVG_gene_array) {
+  HVG_gene_array <- na.omit(HVG_gene_array)
+  colnames(HVG_gene_array)[3:4] <- c("Significance", "identity")
+  HVG_gene_array$Significance <- HVG_gene_array$p.value < .05
+  HVG_gene_array$Significance <- ifelse(HVG_gene_array$Significance == TRUE, "p < 0.05", "p > 0.05")
+  ggplot(data = HVG_gene_array, aes(x = mean_transformed_expression, y = cv2, colour = Significance)) +
+    geom_point(size = 1) +
+    geom_smooth(aes(group = identity), method = "loess", colour = "red", se = TRUE) +
+    scale_colour_manual(values = c("red", "black")) +
+    scale_x_log10(expand = c(.01, 0)) + scale_y_log10(expand = c(.01, 0)) +
+    xlab("Mean normalized read count") + ylab("Squared coefficient of variation") + 
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+          legend.key=element_blank(), axis.line = element_line(colour = "black"))
+}
+
+# plot gene expression correlation across samples
+# INSERT HERE LATER

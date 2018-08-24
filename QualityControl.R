@@ -4,7 +4,7 @@ source("setup.R")
 source("Preprocessing.R")
 
 # Cell-level quality control
-CellQC <- function(q_array, m_array, id, qc_m_array) {
+CellQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
   library_size <- rowSums(q_array)
   geneset_size <- rowSums(q_array != 0)
   library_qc <- !isOutlier(library_size, nmads = 3, type = "lower", log = TRUE)  # best to use negated versions for metadata import
@@ -18,8 +18,11 @@ CellQC <- function(q_array, m_array, id, qc_m_array) {
   print("Beginning metadata QC annotation")
   pass_library_qc <- is.element(rownames(qc_m_array), rownames(library_m_array))  # this is why there cannot be a simultaneous dual filter on library and geneset size
   pass_gene_qc <- is.element(rownames(qc_m_array), rownames(m_array))
-  qc_m_array <- cbind.data.frame(qc_m_array, pass_library_qc, pass_gene_qc)
+  library_size <- rowSums(original_q_array)   # recalculate for the QC graphs
+  geneset_size <- rowSums(original_q_array != 0)
+  qc_m_array <- cbind.data.frame(qc_m_array, library_size, pass_library_qc, geneset_size, pass_gene_qc)
   assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
+  
 }
 
 # Gene-level quality control
@@ -59,6 +62,8 @@ NormalizeCountData <- function(q_array, m_array, id, qc_m_array) {
     size_factors <- computeSumFactors(q_array, sizes = seq(20, 120, 2), # computes size factors per cell, use more pools for higher precision
                                       clusters = deconvolution_clusters)   # clusters improve performance by reducing differential expression 
   }
+  size_factors_dataframe <- cbind.data.frame(colnames(q_array), size_factors)
+  colnames(size_factors_dataframe) <- c("row", "size_factor")
   print("Size factors computed for QC")
   q_array <- scale(q_array, center = FALSE, scale = size_factors)   # performs scaling with these factors
   print("Cells scaled by library size")
@@ -74,5 +79,9 @@ NormalizeCountData <- function(q_array, m_array, id, qc_m_array) {
   print("Beginning metadata QC annotation")
   pass_size_qc <- is.element(rownames(qc_m_array), rownames(m_array))
   qc_m_array <- cbind.data.frame(qc_m_array, pass_size_qc)
+  qc_m_array$row <- rownames(qc_m_array)
+  qc_m_array <- merge(qc_m_array, size_factors_dataframe, by='row', all=TRUE)
+  qc_m_array[is.na(qc_m_array)] <- 0
+  qc_m_array <- qc_m_array[, -1]
   assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
 }

@@ -16,8 +16,16 @@ library(AUCell)   # step 3 of SCENIC, for identifying gene set enrichment
 library(Rtsne)  # produces tSNE coordinates for visualization
 library(SC3)  # for clustering on gene expression
 library(WGCNA)  # finding weighted gene correlation networks
+library(dynamicTreeCut)   # for creating improved hierarchical clusters of gene modules
 library(ggplot2)  # for making plots
+library(tidyr)  # for manipulating dataframes
+library(reshape2) # for manipulating dataframes
 
 # needed for WGCNA to work
 options(stringsAsFactors = FALSE)
 # enableWGCNAThreads(nThreads = 8)  # massively speeds up WGCNA, does not yet work in RStudio
+
+# needed to allow data frames to remove NaNs
+is.nan.data.frame <- function(x){
+  do.call(cbind, lapply(x, is.nan)) 
+}

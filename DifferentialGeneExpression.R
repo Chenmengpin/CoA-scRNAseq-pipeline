@@ -64,5 +64,20 @@ DGE_edgeR <- function(q_array, cluster_id) {
 
 # find variable gene co-expression modules
 DGE_WGCNA <- function(q_array) {
+  threshold_list <- pickSoftThreshold(q_array, powerVector = c(seq(1, 10, by = 1), seq(12, 30, by = 2)), 
+                                      corFnc = bicor, networkType = "signed hybrid", moreNetworkConcepts = TRUE, verbose = 5)
+  assign("WGCNA_thresholds", file = threshold_list, env = .GlobalEnv)
+  adjacency_matrix <- adjacency(q_array, type = "signed", power = threshold_list$powerEstimate, corFnc = bicor)
+  TOMatrix <- TOMsimilarity(adjacency_matrix, TOMType = "signed", verbose = 5)
+  inverse_TOMatrix <- 1 - TOMatrix
+  module_tree <- hclust(as.dist(inverse_TOMatrix), method = "average")
+  module_ids <- cutreeDynamic(dendro = module_tree, distM = inverse_TOMatrix, deepSplit = 4)
+  #module_ids <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = cor, equalizeQuantiles = TRUE, verbose = 5) WORK ON THIS
+  assign("WGCNA_hierarchy", file = module_tree, env = .GlobalEnv)
+  assign("WGCNA_gene_clusters", file = module_ids, env = .GlobalEnv)
+}
+
+# test modules identified in WGCNA for reproducibility IN PROGRESS
+test_WGCNA <- function() {
   
 }
