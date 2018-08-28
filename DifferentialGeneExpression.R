@@ -15,6 +15,7 @@ DGE_edgeR <- function(q_array, cluster_id) {
   q_array <- t(q_array)
   q_array[q_array < 0] <- 0   # if there are negative values, it will crash. all negatives are near-zero values from normalization
   DGE_array <- DGEList(counts = q_array, group = cluster_id)
+  DGE_array <- calcNormFactors(DGE_array)
   print("Beginning model fitting")
   cell_det_rate <- scale(colMeans(q_array > 0))
   genewise_models <- model.matrix(~ cell_det_rate + cluster_id)
@@ -60,19 +61,21 @@ DGE_edgeR <- function(q_array, cluster_id) {
   }
   assign("DEG_PValue", DEG_PValue, env = .GlobalEnv)
   assign("DEG_logFC", DEG_logFC, env = .GlobalEnv)
+  assign("DEG_model", model, env = .GlobalEnv)
+  assign("DEG_QLfitting", fit_model, env = .GlobalEnv)
 }
 
 # find variable gene co-expression modules
 DGE_WGCNA <- function(q_array) {
-  threshold_list <- pickSoftThreshold(q_array, powerVector = c(seq(1, 10, by = 1), seq(12, 30, by = 2)), 
+  threshold_list <- pickSoftThreshold(q_array, powerVector = seq(1, 30, by = 1), 
                                       corFnc = bicor, networkType = "signed hybrid", moreNetworkConcepts = TRUE, verbose = 5)
   assign("WGCNA_thresholds", file = threshold_list, env = .GlobalEnv)
-  adjacency_matrix <- adjacency(q_array, type = "signed", power = threshold_list$powerEstimate, corFnc = bicor)
+  adjacency_matrix <- adjacency(q_array, type = "signed hybrid", power = threshold_list$powerEstimate, corFnc = bicor)
   TOMatrix <- TOMsimilarity(adjacency_matrix, TOMType = "signed", verbose = 5)
   inverse_TOMatrix <- 1 - TOMatrix
   module_tree <- hclust(as.dist(inverse_TOMatrix), method = "average")
   module_ids <- cutreeDynamic(dendro = module_tree, distM = inverse_TOMatrix, deepSplit = 4)
-  #module_ids <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = cor, equalizeQuantiles = TRUE, verbose = 5) WORK ON THIS
+  module_ids <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = bicor, verbose = 5)
   assign("WGCNA_hierarchy", file = module_tree, env = .GlobalEnv)
   assign("WGCNA_gene_clusters", file = module_ids, env = .GlobalEnv)
 }

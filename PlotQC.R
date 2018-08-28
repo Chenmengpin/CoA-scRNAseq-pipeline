@@ -1,4 +1,4 @@
-# Contains plotting functions to make all plots for use in figures
+# Contains plotting functions to make all plots for use in QC figures
 
 # load all other functions
 source("setup.R")
