@@ -22,10 +22,13 @@ SC3Output <- function(sc3_input, sc3_clusters, m_array) {
 }
 
 # Cluster based on gene regulation
-SCENICGeneInference <- function(q_array) {
+SCENIC_Export <- function(q_array) {
   q_array <- 2^q_array
   q_array <- q_array - 1  # removes the log2 normalization, converting into gene-summarized counts for SCENIC  
-  q_array <- t(q_array)
-  gn_array <- GENIE3(q_array, verbose = TRUE)
-  gn_array <- getLinkList(gn_array)
+  q_array <- t(q_array) # convert to formatting for GENIE3
+  write.csv(q_array, file = "SCENIC_clustering/data/GENIE3_import.csv")
+}
+
+SCENIC_Import <- function() {
+  
 }
