@@ -30,5 +30,5 @@ SCENIC_Export <- function(q_array) {
 }
 
 SCENIC_Import <- function() {
-  
+  SCENIC_Output <- read.csv("SCENIC_clustering/SCENIC_export.csv", header = TRUE, row.names = 1)
 }
