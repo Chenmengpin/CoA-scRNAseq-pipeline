@@ -29,6 +29,20 @@ SCENIC_Export <- function(q_array) {
   write.csv(q_array, file = "SCENIC_clustering/data/GENIE3_import.csv")
 }
 
-SCENIC_Import <- function() {
+# imports the output of pySCENIC back into R
+SCENIC_Import <- function(result_name) {
   SCENIC_Output <- read.csv("SCENIC_clustering/SCENIC_export.csv", header = TRUE, row.names = 1)
+  SCENIC_Output <- t(SCENIC_Output)
+  print("SCENIC result loaded")
+  SCENIC_result <- AUCell_exploreThresholds(SCENIC_Output, assignCells=TRUE)
+  assign(result_name, SCENIC_result, env = .GlobalEnv)
+}
+# find binary regulon activity based on AUC scores
+SCENIC_BinaryArray <- function(SCENIC_result) {
+  cellsAssigned <- lapply(SCENIC_result, function(x) x$assignment)
+  assignmentTable <- melt(cellsAssigned, value.name="cell")
+  print("Binary assignments generated")
+  colnames(assignmentTable)[2] <- "geneSet"
+  assignmentMat <- table(assignmentTable[, "geneSet"], assignmentTable[, "cell"])
+  binary_regulon_array <- as.data.frame.matrix(assignmentMat)
 }
