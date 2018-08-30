@@ -1,7 +1,4 @@
-# Initialize dependencies and functions from prior steps
-
-source("setup.R")
-source("Preprocessing.R")
+# Do quality control on a cell and gene level
 
 # Cell-level quality control
 CellQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {

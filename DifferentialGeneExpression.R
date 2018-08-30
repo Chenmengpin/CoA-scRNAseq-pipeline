@@ -1,11 +1,5 @@
 # Figures out differential gene expression between all different clusters
 
-# load all other functions
-source("setup.R")
-source("QualityControl.R")
-source("CorrectTechnicalNoise.R")
-source("Clustering.R")
-
 # does differential gene expression analysis
 DGE_edgeR <- function(q_array, cluster_id) {
   DEG_PValue <- list()

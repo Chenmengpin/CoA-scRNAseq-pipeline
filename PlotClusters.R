@@ -1,12 +1,5 @@
 # Contains plotting functions to use for identifying clusters of similar gene expression in the data
 
-# load all other functions
-source("setup.R")
-source("QualityControl.R")
-source("CorrectTechnicalNoise.R")
-source("Clustering.R")
-source("DifferentialGeneExpression.R")
-
 # Create a map of gene expression
 Plot_tSNE <- function(q_array, color_ids) {
   cell_ids <- rownames(q_array)
@@ -23,3 +16,18 @@ Plot_tSNE <- function(q_array, color_ids) {
 }
 
 SC3_consensus_plot <- sc3_plot_consensus(sc3_input, cluster_number)   # saves the SC3 plot so it can be returned
+
+Plot_BinaryArray <- function(binary_regulon_array, cluster_id) {
+  binary_regulon_heatmap <- binary_regulon_array
+  binary_regulon_heatmap <- data.frame(t(binary_regulon_array))
+  binary_regulon_heatmap$cluster <- cluster_id
+  binary_regulon_heatmap <- binary_regulon_heatmap[order(binary_regulon_heatmap$cluster),]
+  cluster_ann <- data.frame(binary_regulon_heatmap$cluster)
+  binary_regulon_heatmap <- binary_regulon_heatmap[, - grep("cluster", colnames(binary_regulon_heatmap))]
+  binary_regulon_heatmap <- t(binary_regulon_heatmap)
+  color_list <- list(cluster_ann = distinctColorPalette(k = nlevels(cluster_id)))
+  tiff("yep.tiff", width = 900, height = 900, res = 300)
+  aheatmap(binary_regulon_heatmap, annCol = cluster_ann, annColors = color_list,
+           Colv = NA, scale = "none", color = "black", legend = FALSE, annLegend = TRUE)
+  dev.off()
+}

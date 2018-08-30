@@ -1,10 +1,5 @@
 # produces cell coordinates, does clustering via SC3 and SCENIC
 
-source("setup.R")
-source("Preprocessing.R")
-source("QualityControl.R")
-source("CorrectTechnicalNoise.R")
-
 # Cluster the cells based on gene expression
 SC3clustering <- function(q_array) {
   sce_array <- SingleCellExperiment(assays = list(logcounts = t(q_array)), 
@@ -32,17 +27,21 @@ SCENIC_Export <- function(q_array) {
 # imports the output of pySCENIC back into R
 SCENIC_Import <- function(result_name) {
   SCENIC_Output <- read.csv("SCENIC_clustering/SCENIC_export.csv", header = TRUE, row.names = 1)
+  col_old <- colnames(SCENIC_Output)
+  col_new <- gsub(pattern = "[.]..",replacement = "", x  = col_old)   # removes ellipses after each gene name
+  colnames(SCENIC_Output) <- col_new
   SCENIC_Output <- t(SCENIC_Output)
-  print("SCENIC result loaded")
+  print("SCENIC product loaded")
   SCENIC_result <- AUCell_exploreThresholds(SCENIC_Output, assignCells=TRUE)
   assign(result_name, SCENIC_result, env = .GlobalEnv)
 }
+
 # find binary regulon activity based on AUC scores
-SCENIC_BinaryArray <- function(SCENIC_result) {
+SCENIC_BinaryArray <- function(SCENIC_result, SCENIC_name) {
   cellsAssigned <- lapply(SCENIC_result, function(x) x$assignment)
   assignmentTable <- melt(cellsAssigned, value.name="cell")
-  print("Binary assignments generated")
   colnames(assignmentTable)[2] <- "geneSet"
-  assignmentMat <- table(assignmentTable[, "geneSet"], assignmentTable[, "cell"])
+  binary_regulon_table <- table(assignmentTable[, "geneSet"], assignmentTable[, "cell"])
   binary_regulon_array <- as.data.frame.matrix(assignmentMat)
+  assign(SCENIC_name, binary_regulon_array, env = .GlobalEnv)
 }

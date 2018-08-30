@@ -1,12 +1,5 @@
 # Create plots of all summarized gene expression and its interaction with all clusters
 
-# load all other functions
-source("setup.R")
-source("QualityControl.R")
-source("CorrectTechnicalNoise.R")
-source("Clustering.R")
-source("DifferentialGeneExpression.R")
-
 # Quality control for soft thresholding
 # 2 is SFT R-squared, 5 is mean connectivity, 8 is density, 9 is centralization, 10 is heterogeneity
 WGCNA_Plot_SoftThreshold <- function(thresholds, metric_id, metric_label) {

@@ -1,12 +1,5 @@
 # Contains plotting functions to make all plots for use in QC figures
 
-# load all other functions
-source("setup.R")
-source("QualityControl.R")
-source("CorrectTechnicalNoise.R")
-source("Clustering.R")
-source("DifferentialGeneExpression.R")
-
 # plot amount of cells eliminated by each quality control measure
 PlotCellExclusionQC <- function(qc_m_array, group_id, colorlist) {
   qc_m_array <- na.omit(qc_m_array)
@@ -138,6 +131,3 @@ PlotHVGs <- function(HVG_gene_array) {
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
           legend.key=element_blank(), axis.line = element_line(colour = "black"))
 }
-
-# plot gene expression correlation across samples
-# INSERT HERE LATER

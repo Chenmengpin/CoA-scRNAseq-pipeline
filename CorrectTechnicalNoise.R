@@ -1,8 +1,4 @@
-# Initialize dependencies and functions from prior steps
-
-source("setup.R")
-source("Preprocessing.R")
-source("QualityControl.R")
+# Remove technical noise in each dataset
 
 # Compensating for batch effects and inter-individual variability
 PrepDatasets <- function(..., dataset_names, m_array_list, qc_m_array_list, gene_m_array_list) {

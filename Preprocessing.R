@@ -1,7 +1,5 @@
 # Matches cell IDs and annotations to values and assigns gene identities
 
-source("setup.R")   # Import dependencies
-
 # TXIMPORT STEP FOR C1 DATA
 
 # Create the quant array for gene expression by each cell and a corresponding array for metadata
