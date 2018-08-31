@@ -4,7 +4,7 @@ rm(list = ls())   # Reset the environment, remove all old values before beginnin
 # Load all packages needed for the pipeline
 library(biomaRt)  # for matching Ensembl/GENCODE IDs to gene names
 library(tximport)   # does gene-level estimation for C1 data
-library(edgeR) # does differential gene expression analysis
+library(MAST) # does differential gene expression analysis
 library(DropletUtils)   # for 10X data preprocessing
 library(scran)  # for quality control of single cell data
 library(scater)   # for quality control of single cell data
@@ -18,7 +18,6 @@ library(dynamicTreeCut)   # for creating improved hierarchical clusters of gene 
 library(ggplot2)  # for making plots
 library(tidyr)  # for manipulating dataframes
 library(reshape2) # for manipulating dataframes
-library(ComplexHeatmap) # for producing heatmaps
 library(randomcoloR)  # gives consistent color output
 
 # needed for WGCNA to work
