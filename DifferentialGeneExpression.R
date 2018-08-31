@@ -14,7 +14,7 @@ DGE_MAST <- function(q_array, cluster_id) {
                          cData = data.frame(wellKey = colnames(MAST_array), # wellKey is what MAST calls cells
                                             cluster = MAST_clusters, cdr = cell_det_rate))  # these are the co-variates of interest
   zlm_result <- zlm(~cdr + cluster, sca = MAST_sca)   # need to compute the model for MAST
-  for (i in 1:(length(colnames(zlm_result@coefC) - 2))) {   # need to do this to prevent namelength errors
+  for (i in 1:(length(colnames(zlm_result@coefC)) - 2)) {   # need to do this to prevent namelength errors
     contrast_value <- colnames(zlm_result@coefC)[i+2]   # first two slots filled by the CDR and intercept, which are not going to be considered
     LRT_array <- summary(zlm_result, doLRT = contrast_value)    # this calculates the p-values for each
     LRT_dt <- LRT_array$datatable   # removes the superficial list layer
