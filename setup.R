@@ -18,6 +18,8 @@ library(dynamicTreeCut)   # for creating improved hierarchical clusters of gene 
 library(ggplot2)  # for making plots
 library(tidyr)  # for manipulating dataframes
 library(reshape2) # for manipulating dataframes
+library(ComplexHeatmap) # for producing heatmaps
+library(randomcoloR)  # gives consistent color output
 
 # needed for WGCNA to work
 options(stringsAsFactors = FALSE)
@@ -27,3 +29,15 @@ options(stringsAsFactors = FALSE)
 is.nan.data.frame <- function(x){
   do.call(cbind, lapply(x, is.nan)) 
 }
+
+# load functions for everything
+source("Preprocessing.R")
+source("QualityControl.R")
+source("CorrectTechnicalNoise.R")
+source("Validation.R")
+source("Clustering.R")
+source("DifferentialGeneExpression.R")
+source("PlotQC.R")
+source("PlotValidation.R")
+source("PlotClusters.R")
+source("PlotGeneExpression.R")

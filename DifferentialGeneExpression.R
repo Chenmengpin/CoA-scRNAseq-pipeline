@@ -59,6 +59,36 @@ DGE_edgeR <- function(q_array, cluster_id) {
   assign("DEG_QLfitting", fit_model, env = .GlobalEnv)
 }
 
+# does differential gene expression analysis via MAST
+DGE_MAST <- function(q_array, cluster_id) {
+  MAST_DGE_list <- list()
+  MAST_array <- t(q_array)
+  cell_det_rate <- scale(colMeans(MAST_array > 0))
+  MAST_sca <- FromMatrix(exprsArray = MAST_array, 
+                         cData = data.frame(wellKey = colnames(MAST_array),
+                                            clusters = cluster_id, cdr = cell_det_rate),
+                         fData = data.frame(primerid = rownames(MAST_array), 
+                                            Gene = rownames(MAST_array)))
+  zlm_result <- zlm(~cdr + clusters, sca = MAST_sca)
+  for (i in 1:length(colnames(zlm_result@coefC))) {
+    contrast_value <- colnames(zlm_result@coefC)[i]
+    LRT_array <- summary(zlmdata, doLRT = contrast_value)
+    LRT_dt <- LRT_array$datatable
+    LRT_dt <- LRT_dt[LRT_dt$contrast == contrast_value]
+    P_values <- LRT_dt[LRT_dt$component == "H",]
+    P_values$`Pr(>Chisq)` <- p.adjust(P_values$`Pr(>Chisq)`, method = "BH")
+    P_values <-  P_values[P_values$`Pr(>Chisq)` < .01,]
+    LFC <- LRT_dt[LRT_dt$component == "logFC",]
+    LFC <- LFC[LFC$coef > .05,]
+    markers <- data.frame(match(P_values$primerid, LFC$primerid), row.names = P_values$primerid)
+    markers <- rownames(markers)
+    MAST_DGE_list[[i]] <- markers
+    print(i)
+  }
+  names(MAST_DGE_list) <- colnames(zlm_result@coefC)
+  MAST_result <- lrTest(zlm_result, "clusters")
+}
+
 # find variable gene co-expression modules
 DGE_WGCNA <- function(q_array) {
   threshold_list <- pickSoftThreshold(q_array, powerVector = seq(1, 30, by = 1), 
