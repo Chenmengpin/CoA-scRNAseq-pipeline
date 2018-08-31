@@ -62,6 +62,7 @@ DGE_edgeR <- function(q_array, cluster_id) {
 # does differential gene expression analysis via MAST
 DGE_MAST <- function(q_array, cluster_id) {
   MAST_DGE_list <- list()
+  MAST_DGE_full <- list()
   MAST_array <- t(q_array)
   cell_det_rate <- scale(colMeans(MAST_array > 0))
   MAST_sca <- FromMatrix(exprsArray = MAST_array, 
@@ -72,20 +73,30 @@ DGE_MAST <- function(q_array, cluster_id) {
   zlm_result <- zlm(~cdr + clusters, sca = MAST_sca)
   for (i in 1:length(colnames(zlm_result@coefC))) {
     contrast_value <- colnames(zlm_result@coefC)[i]
-    LRT_array <- summary(zlmdata, doLRT = contrast_value)
+    LRT_array <- summary(zlm_result, doLRT = contrast_value)
     LRT_dt <- LRT_array$datatable
     LRT_dt <- LRT_dt[LRT_dt$contrast == contrast_value]
     P_values <- LRT_dt[LRT_dt$component == "H",]
     P_values$`Pr(>Chisq)` <- p.adjust(P_values$`Pr(>Chisq)`, method = "BH")
+    gene_list <- P_values$primerid
+    pval_list <- P_values$`Pr(>Chisq)`
     P_values <-  P_values[P_values$`Pr(>Chisq)` < .01,]
     LFC <- LRT_dt[LRT_dt$component == "logFC",]
+    LFC_list <- LFC$coef
     LFC <- LFC[LFC$coef > .05,]
+    filtered_array <- cbind.data.frame(gene_list, pval_list, LFC_list)
+    colnames(filtered_array) <- c("Gene", "Pvalue", "logFC")
+    filtered_array$logFC[is.nan(filtered_array$logFC)] <- 0
+    filtered_array$PvalSig <- filtered_array$Pvalue < .01
+    filtered_array$logFCSig <- filtered_array$logFC > .05
     markers <- data.frame(match(P_values$primerid, LFC$primerid), row.names = P_values$primerid)
     markers <- rownames(markers)
     MAST_DGE_list[[i]] <- markers
+    MAST_DGE_full[[i]] <- filtered_array
     print(i)
   }
   names(MAST_DGE_list) <- colnames(zlm_result@coefC)
+  names(MAST_DGE_full) <- colnames(zlm_result@coefC)
   MAST_result <- lrTest(zlm_result, "clusters")
 }
 
