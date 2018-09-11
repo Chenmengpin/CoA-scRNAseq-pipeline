@@ -6,7 +6,7 @@
 AssembleArrays <- function(quant_csv, gene_ids, batch_id, sample_id, region_id, method_id) {
   transcript_ids <- read.table(gene_ids, colClasses = "character")  # import the annotations from alignment
   mart <- useMart(biomart = "ENSEMBL_MART_ENSEMBL", dataset = "mmusculus_gene_ensembl", host = "www.ensembl.org")   # connect to Ensembl via BioMart
-  ann2gene <- getBM(c("ensembl_gene_id_version", "external_gene_name"), "ensembl_gene_id_version", transcript_ids, mart)  # create annotation to gene symbol key
+  ann2gene <- getBM(attributes = c("ensembl_gene_id_version", "external_gene_name"), filters = "ensembl_gene_id_version", values = transcript_ids, mart = mart)  # create annotation to gene symbol key
   import_genes <- ann2gene[match(transcript_ids$V1, ann2gene$ensembl_gene_id_version),2]  # convert the list of annotations to list of corresponding gene symbols
   quant_array <- na.omit(t(read.csv(quant_csv, header = FALSE)))  # import the quantitation from alignment
   quant_array <- data.frame(t(quant_array))   # transpose dataframe to make more friendly to downstream manipulation
