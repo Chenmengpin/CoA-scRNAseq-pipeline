@@ -19,6 +19,7 @@ library(ggplot2)  # for making plots
 library(tidyr)  # for manipulating dataframes
 library(reshape2) # for manipulating dataframes
 library(randomcoloR)  # gives consistent color output
+library(topGO) # for gene ontology analysis
 
 # needed for WGCNA to work
 options(stringsAsFactors = FALSE)
