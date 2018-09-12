@@ -15,8 +15,9 @@ DGE_MAST <- function(q_array, cluster_id, gene_metadata) {
                          cData = data.frame(wellKey = colnames(MAST_array), # wellKey is what MAST calls cells
                                             cluster = MAST_clusters, cdr = cell_det_rate))  # these are the co-variates of interest
   zlm_result <- zlm(~cdr + cluster, sca = MAST_sca)   # need to compute the model for MAST
-  GO_frame <- rep(1, length = length(gene_list))  # creating an array for import into topGO
-  names(GO_frame) <- gene_list
+  genes_all <- rownames(gene_metadata)
+  GO_frame <- rep(1, length = length(genes_all))  # creating an array for import into topGO
+  names(GO_frame) <- genes_all
   for (i in 1:(length(colnames(zlm_result@coefC)) - 2)) {   # need to do this to prevent namelength errors
     contrast_value <- colnames(zlm_result@coefC)[i+2]   # first two slots filled by the CDR and intercept, which are not going to be considered
     LRT_array <- summary(zlm_result, doLRT = contrast_value)    # this calculates the p-values for each
@@ -59,11 +60,14 @@ DGE_WGCNA <- function(q_array) {
   module_tree <- hclust(as.dist(inverse_TOMatrix), method = "average")
   module_ids <- cutreeDynamic(dendro = module_tree, distM = inverse_TOMatrix, deepSplit = 4)
   module_ids <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = bicor, verbose = 5)
+  WGCNA_GO_export <- list()
+  GO_frame <- rep(1, length = length(gene_list))  # creating an array for import into topGO
+  names(GO_frame) <- gene_list
+  for (i in 1:max(module_ids$colors)) {
+    
+  }
   assign("WGCNA_hierarchy", file = module_tree, env = .GlobalEnv)
   assign("WGCNA_gene_clusters", file = module_ids, env = .GlobalEnv)
+  assign("WGCNA_GO_export", file = env = .GlobalEnv)
 }
 
-# test modules identified in WGCNA for reproducibility IN PROGRESS
-test_WGCNA <- function() {
-  
-}
