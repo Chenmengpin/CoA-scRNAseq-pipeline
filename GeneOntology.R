@@ -3,11 +3,21 @@
 # create list of GO terms
 GetGOTerms <- function(gene_metadata) {
   gene_list <- rownames(gene_metadata)
+  print("Querying BioMart")
   mart <- useMart(biomart = "ENSEMBL_MART_ENSEMBL", dataset = "mmusculus_gene_ensembl", host = "www.ensembl.org")   # connect to Ensembl via BioMart
   gene2GO <- getBM(attributes = c("external_gene_name", "name_1006"), filters = "external_gene_name", values = gene_list, mart = mart)  # create gene to GO term key
   GO_library <- getBM(attributes = c("external_gene_name", "name_1006", "go_id", "definition_1006"), filters = "external_gene_name", values = gene_list, mart = mart)  # create gene to GO term key
+  print("Building GO array")
   GO_array <- dcast(data = gene2GO, formula = external_gene_name ~ name_1006, fun.aggregate = length)  # converts from melted to a binary array
   rownames(GO_array) <- GO_array$external_gene_name
+  print("Writing GO library and mappings")
+  GO_library <- GO_library[GO_library$go_id != "",]   # removes empty elements before making mappings
+  GO_mappings <- list()
+  for (i in 1:length(gene_list)) {
+    GO_mappings[[i]] <- GO_library$go_id[GO_library$external_gene_name %in% gene_list[i]]
+    print(i)
+  }
+  names(GO_mappings) <- gene_list
   GO_array <- GO_array[, -(1:2)]  # these are needed to clean the array
   GO_library <- GO_library[, -1]
   GO_library <- GO_library[!duplicated(GO_library$name_1006),]   # needed to remove duplicates from the master library
@@ -46,13 +56,14 @@ GetGOTerms <- function(gene_metadata) {
                          "regulation of axon guidance", "retinal ganglion cell axon guidance", "sensory neuron axon guidance", "semaphorin-plexin signaling pathway", "semaphorin receptor binding", "neuron projection maintenance")
   Chemosensory_terms <- c("olfactory receptor activity", "pheromone receptor activity", "trace-amine receptor activity", "bitter taste receptor activity", "sensory perception of sour taste", "sensory perception of umami taste",
                           "taste receptor activity")
+  print("Sorting genes into functional groups")
   GO_Term_List <- list(Glutamate_terms, GABAglycine_terms, Monoamine_terms, MiscNT_terms, IonChannel_terms, PeptideHormoneNT_terms, Adhesion_terms, Pathfinding_terms, Chemosensory_terms)  # group all the known terms together
   GO_IDs <- list()  # needed to prevent the loop from crashing
   all_genes <- c("Initial_entry")
   for (i in 1:9){
     GO_annotation <- GO_library[GO_library$GO_Term %in% GO_Term_List[[i]],]
-    geneIDs_GO <- which(apply(GO_list[, colnames(GO_list) %in% GO_Term_List[[i]]] == 1, 1, any))  # find the row IDs of the chosen genes
-    genes_GO <- rownames(GO_list[geneIDs_GO, ])
+    geneIDs_GO <- which(apply(GO_array[, colnames(GO_array) %in% GO_Term_List[[i]]] == 1, 1, any))  # find the row IDs of the chosen genes
+    genes_GO <- rownames(GO_array[geneIDs_GO, ])
     genes_GO <- genes_GO[!all_genes %in% genes_GO]
     GO_IDs[[i]] <- list(genes_GO, GO_annotation)
     names(GO_IDs[[i]]) <- c("Genes", "GO_Annotation")
@@ -63,6 +74,7 @@ GetGOTerms <- function(gene_metadata) {
   assign("GO_array", GO_array, env = .GlobalEnv)
   assign("GO_library", GO_library, env = .GlobalEnv)
   assign("GO_IDs", GO_IDs, env = .GlobalEnv)
+  assign("GO_mappings", GO_mappings, env = .GlobalEnv)
 }
 
 GetEnrichedGO <- function(go_genes) {

@@ -2,11 +2,12 @@
 
 
 # does differential gene expression analysis via MAST
-DGE_MAST <- function(q_array, cluster_id) {
+DGE_MAST <- function(q_array, cluster_id, gene_metadata) {
   MAST_clusters <- as.character(c(cluster_id, 0))   # sequester intercept away from real data, where we have no logFC for this
   intercept_vector <- rep(0, times = length(colnames(q_array))) # treat intercept vector like a cell with its own cluster
   MAST_array <- rbind.data.frame(q_array, intercept_vector)
   MAST_DGE_list <- list()
+  MAST_GO_export <- list()
   MAST_array <- t(MAST_array)   # need this to format for analysis via MAST
   cell_det_rate <- scale(colMeans(MAST_array > 0))  # CDR depends on finding the mean number of genes detected per cell
   MAST_sca <- FromMatrix(exprsArray = MAST_array, 
@@ -14,6 +15,8 @@ DGE_MAST <- function(q_array, cluster_id) {
                          cData = data.frame(wellKey = colnames(MAST_array), # wellKey is what MAST calls cells
                                             cluster = MAST_clusters, cdr = cell_det_rate))  # these are the co-variates of interest
   zlm_result <- zlm(~cdr + cluster, sca = MAST_sca)   # need to compute the model for MAST
+  GO_frame <- rep(1, length = length(gene_list))  # creating an array for import into topGO
+  names(GO_frame) <- gene_list
   for (i in 1:(length(colnames(zlm_result@coefC)) - 2)) {   # need to do this to prevent namelength errors
     contrast_value <- colnames(zlm_result@coefC)[i+2]   # first two slots filled by the CDR and intercept, which are not going to be considered
     LRT_array <- summary(zlm_result, doLRT = contrast_value)    # this calculates the p-values for each
@@ -29,13 +32,20 @@ DGE_MAST <- function(q_array, cluster_id) {
     colnames(filtered_array) <- c("Gene", "Pvalue", "logFC")
     filtered_array$logFC[is.nan(filtered_array$logFC)] <- 0
     filtered_array$PvalSig <- filtered_array$Pvalue < .01   # cuts off significant p-value at FDR-corrected 0.01
-    filtered_array$logFCSig <- filtered_array$logFC > 1   # sets baseline for minimum increase to be considered a marker gene
+    filtered_array$logFCSig <- filtered_array$logFC > 0   # sets baseline for minimum increase to be considered a marker gene
     filtered_array$marker <- filtered_array$PvalSig & filtered_array$logFCSig == TRUE   # unifies marker gene criteria
     MAST_DGE_list[[i]] <- filtered_array
+    cluster_GO_frame <- GO_frame
+    cluster_GO_genes <- filtered_array$Gene[filtered_array$marker == TRUE]
+    cluster_GO_frame[names(cluster_GO_frame) %in% cluster_GO_genes] <- 2
+    cluster_GO_frame <- factor(cluster_GO_frame, levels = c(1, 2), labels = c("0", "1"))
+    MAST_GO_export[[i]] <- cluster_GO_frame
     print(i)
   }
   names(MAST_DGE_list) <- colnames(zlm_result@coefC)[3:length(colnames(zlm_result@coefC))]
+  names(MAST_GO_export) <- names(MAST_DGE_list)
   assign("MAST_DGE_array", MAST_DGE_list, env = .GlobalEnv)
+  assign("MAST_GO_export", MAST_GO_export, env = .GlobalEnv)
 }
 
 # find variable gene co-expression modules
