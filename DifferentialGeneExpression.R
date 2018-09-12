@@ -50,24 +50,34 @@ DGE_MAST <- function(q_array, cluster_id, gene_metadata) {
 }
 
 # find variable gene co-expression modules
-DGE_WGCNA <- function(q_array) {
+DGE_WGCNA <- function(q_array, gene_metadata) {
   threshold_list <- pickSoftThreshold(q_array, powerVector = seq(1, 30, by = 1), 
                                       corFnc = bicor, networkType = "signed hybrid", moreNetworkConcepts = TRUE, verbose = 5)
-  assign("WGCNA_thresholds", file = threshold_list, env = .GlobalEnv)
   adjacency_matrix <- adjacency(q_array, type = "signed hybrid", power = threshold_list$powerEstimate, corFnc = bicor)
   TOMatrix <- TOMsimilarity(adjacency_matrix, TOMType = "signed", verbose = 5)
   inverse_TOMatrix <- 1 - TOMatrix
+  print("Refining module delineation")
   module_tree <- hclust(as.dist(inverse_TOMatrix), method = "average")
   module_ids <- cutreeDynamic(dendro = module_tree, distM = inverse_TOMatrix, deepSplit = 4)
   module_ids <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = bicor, verbose = 5)
+  print("Creating WGCNA module gene array for GO export")
+  module_array <- cbind.data.frame(colnames(q_array), module_ids$colors)
+  colnames(module_array) <- c("Gene", "Module")
   WGCNA_GO_export <- list()
-  GO_frame <- rep(1, length = length(gene_list))  # creating an array for import into topGO
-  names(GO_frame) <- gene_list
+  genes_all <- rownames(gene_metadata)
+  GO_frame <- rep(1, length = length(genes_all))  # creating an array for import into topGO
+  names(GO_frame) <- genes_all
   for (i in 1:max(module_ids$colors)) {
-    
+    module_GO_frame <- GO_frame
+    module_GO_genes <- module_array$Gene[module_array$Module == 5]
+    module_GO_frame[names(module_GO_frame) %in% module_GO_genes] <- 2
+    module_GO_frame <- factor(module_GO_frame, levels = c(1, 2), labels = c("0", "1"))
+    WGCNA_GO_export[[i]] <- module_GO_frame
+    names(WGCNA_GO_export[[i]]) <- paste0("module", i)
+    print(i)
   }
+  assign("WGCNA_thresholds", file = threshold_list, env = .GlobalEnv)
   assign("WGCNA_hierarchy", file = module_tree, env = .GlobalEnv)
   assign("WGCNA_gene_clusters", file = module_ids, env = .GlobalEnv)
   assign("WGCNA_GO_export", file = env = .GlobalEnv)
 }
-
