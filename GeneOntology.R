@@ -77,6 +77,34 @@ GetGOTerms <- function(gene_metadata) {
   assign("GO_mappings", GO_mappings, env = .GlobalEnv)
 }
 
-GetEnrichedGO <- function(go_genes) {
-  
+GetEnrichedGO <- function(GO_genes, GO_mappings, GO_name) {
+  Enriched_GOs <- list()
+  for (i in 1:length(GO_genes)) {
+    GO_data_BP <- new("topGOdata", ontology = "BP", allGenes = GO_genes[[i]],
+                      annot = annFUN.gene2GO, gene2GO = GO_mappings)
+    GO_data_MF <- new("topGOdata", ontology = "MF", allGenes = GO_genes[[i]],
+                      annot = annFUN.gene2GO, gene2GO = GO_mappings)
+    GO_data_CC <- new("topGOdata", ontology = "CC", allGenes = GO_genes[[i]],
+                      annot = annFUN.gene2GO, gene2GO = GO_mappings)
+    GOtest <- new("classicCount", testStatistic = GOFisherTest, name = "Fisher", allMembers = names(GO_genes[[i]]),
+                  sigMembers = names(GO_genes[[i]][GO_genes[[i]] == 1]))
+    resultFisher_BP <- getSigGroups(GO_data_BP, test.stat = GOtest)
+    resultTable_BP <- GenTable(GO_data_BP, classic = resultFisher_BP, orderBy = "classic", 
+                            ranksOf = "classic", topNodes = length(usedGO(GO_data_BP)))
+    resultTable_BP$classic <- p.adjust(resultTable_BP$classic, method = "BH")
+    resultFisher_MF <- getSigGroups(GO_data_MF, test.stat = GOtest)
+    resultTable_MF <- GenTable(GO_data_MF, classic = resultFisher_MF, orderBy = "classic", 
+                               ranksOf = "classic", topNodes = length(usedGO(GO_data_MF)))
+    resultTable_MF$classic <- p.adjust(resultTable_MF$classic, method = "BH")
+    resultFisher_CC <- getSigGroups(GO_data_CC, test.stat = GOtest)
+    resultTable_CC <- GenTable(GO_data_CC, classic = resultFisher_CC, orderBy = "classic", 
+                               ranksOf = "classic", topNodes = length(usedGO(GO_data_CC)))
+    resultTable_CC$classic <- p.adjust(resultTable_CC$classic, method = "BH")
+    enrichedGO <- rbind.data.frame(resultTable_BP[resultTable_BP$classic < .05,],
+                                   resultTable_MF[resultTable_MF$classic < .05,],
+                                   resultTable_CC[resultTable_CC$classic < .05,])
+    Enriched_GOs[[i]] <- enrichedGO
+  }
+  names(Enriched_GOs) <- names(GO_genes)
+  assign(GO_name, Enriched_GOs, env = .GlobalEnv)
 }

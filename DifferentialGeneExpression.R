@@ -59,21 +59,21 @@ DGE_WGCNA <- function(q_array, gene_metadata) {
   print("Refining module delineation")
   module_tree <- hclust(as.dist(inverse_TOMatrix), method = "average")
   module_ids <- cutreeDynamic(dendro = module_tree, distM = inverse_TOMatrix, deepSplit = 4)
-  module_ids <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = bicor, verbose = 5)
+  #module_ids <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = bicor, verbose = 5)
   print("Creating WGCNA module gene array for GO export")
   module_array <- cbind.data.frame(colnames(q_array), module_ids$colors)
   colnames(module_array) <- c("Gene", "Module")
   WGCNA_GO_export <- list()
   genes_all <- rownames(gene_metadata)
-  GO_frame <- rep(1, length = length(genes_all))  # creating an array for import into topGO
+  GO_frame <- rep(0, length = length(genes_all))  # creating an array for import into topGO
   names(GO_frame) <- genes_all
   for (i in 1:max(module_ids$colors)) {
     module_GO_frame <- GO_frame
-    module_GO_genes <- module_array$Gene[module_array$Module == 5]
-    module_GO_frame[names(module_GO_frame) %in% module_GO_genes] <- 2
-    module_GO_frame <- factor(module_GO_frame, levels = c(1, 2), labels = c("0", "1"))
+    module_GO_genes <- module_array$Gene[module_array$Module == i]
+    module_GO_frame[names(module_GO_frame) %in% module_GO_genes] <- 1
+    module_GO_frame <- factor(module_GO_frame)
     WGCNA_GO_export[[i]] <- module_GO_frame
-    names(WGCNA_GO_export[[i]]) <- paste0("module", i)
+    names(WGCNA_GO_export) <- paste0("module", 1:max(module_ids$colors))
     print(i)
   }
   assign("WGCNA_thresholds", file = threshold_list, env = .GlobalEnv)
