@@ -103,8 +103,41 @@ GetEnrichedGO <- function(GO_genes, GO_mappings, GO_name) {
     enrichedGO <- rbind.data.frame(resultTable_BP[resultTable_BP$classic < .05,],
                                    resultTable_MF[resultTable_MF$classic < .05,],
                                    resultTable_CC[resultTable_CC$classic < .05,])
+    enrichedGO <- enrichedGO[, -(3:5)]
+    colnames(enrichedGO) <- c("GO ID", "GO Term", "P-value")
     Enriched_GOs[[i]] <- enrichedGO
   }
   names(Enriched_GOs) <- names(GO_genes)
   assign(GO_name, Enriched_GOs, env = .GlobalEnv)
+}
+
+ExportGOtoCytoscape <- function(GO_array, GO_list, folder_name, graph_name) {
+  for (j in 1:length(GO_list)) {
+    GO_genes <- names(GO_list[[i]][GO_list[[i]] == 1])
+    GO_filtered <- GO_array[rownames(GO_array) %in% GO_genes, ]
+    jaccard <- matrix(0, nrow = nrow(GO_filtered), ncol = nrow(GO_filtered))  #set up the matrix initially
+    rownames(jaccard) <- rownames(GO_filtered)
+    colnames(jaccard) <- rownames(GO_filtered)
+    pairs <- t(combn(1:nrow(GO_filtered), 2))
+    for (i in 1:nrow(pairs)){
+      num <- sum(sapply(1:ncol(GO_filtered), function(x)(min(GO_filtered[pairs[i, 1], x], GO_filtered[pairs[i, 2], x]))))
+      den <- sum(sapply(1:ncol(GO_filtered), function(x)(max(GO_filtered[pairs[i, 1], x], GO_filtered[pairs[i, 2], x]))))
+      jaccard[pairs[i, 1], pairs[i, 2]] <- num/den
+      jaccard[pairs[i, 2], pairs[i, 1]] <- num/den
+      print(i)
+    }
+    jaccard[which(is.na(jaccard))] <- 0
+    diag(jaccard) <- 1
+    jaccard <- 1 - jaccard
+    export_matrix <- melt(jaccard)
+    export_matrix <- export_matrix[export_matrix$value != 0,]
+    export_matrix <- export_matrix[export_matrix$value  < .9,]
+    export_matrix <- cbind.data.frame(export_matrix, 
+                                      rep("undirected", times = length(rownames(export_matrix))),
+                                      rep(NA, times = length(rownames(export_matrix))),
+                                      rep(NA, times = length(rownames(export_matrix))))
+    colnames(export_matrix) <- c("fromNode", "toNode", "weight", "direction", "fromAltName", "toAltName")
+    write.table(export_matrix, file = paste0(folder_name, "/", graph_name, j), sep = "\t", row.names = FALSE)
+    print(j)
+  }
 }

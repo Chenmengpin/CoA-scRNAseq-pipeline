@@ -76,6 +76,8 @@ DGE_WGCNA <- function(q_array, gene_metadata) {
     names(WGCNA_GO_export) <- paste0("module", 1:max(module_ids$colors))
     print(i)
   }
+  CytoScape_WGCNA <- exportNetworkToCytoscape(adjacency_matrix, nodeAttr = module_array$Module,
+                                              edgeFile = "WGCNA_edge", nodeFile = "WGCNA_node")
   assign("WGCNA_thresholds", file = threshold_list, env = .GlobalEnv)
   assign("WGCNA_hierarchy", file = module_tree, env = .GlobalEnv)
   assign("WGCNA_gene_clusters", file = module_ids, env = .GlobalEnv)
