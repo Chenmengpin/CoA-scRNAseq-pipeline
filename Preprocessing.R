@@ -1,7 +1,5 @@
 # Matches cell IDs and annotations to values and assigns gene identities
 
-# TXIMPORT STEP FOR C1 DATA
-
 # Create the quant array for gene expression by each cell and a corresponding array for metadata
 AssembleArrays <- function(quant_csv, gene_ids, batch_id, sample_id, region_id, method_id) {
   transcript_ids <- read.table(gene_ids, colClasses = "character")  # import the annotations from alignment

@@ -5,7 +5,7 @@ CellQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
   library_size <- rowSums(q_array)
   geneset_size <- rowSums(q_array != 0)
   library_qc <- !isOutlier(library_size, nmads = 3, type = "lower", log = TRUE)  # best to use negated versions for metadata import
-  gene_qc <- !isOutlier(geneset_size, nmads = 3, type = "lower", log = TRUE)
+  gene_qc <- geneset_size > 1000
   m_array <- cbind.data.frame(m_array, library_size, geneset_size)   # add all library and geneset info to metadata
   q_array <- q_array[library_qc == TRUE & gene_qc == TRUE,]   # dual filters on library and geneset size, needs to pass both simultaneously here
   library_m_array <- m_array[library_qc == TRUE,] # these need to be separated so there can be a separate library size column in the QC array
