@@ -24,6 +24,7 @@ CellQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
 
 # Gene-level quality control
 GeneQC <- function(q_array, id) {
+  q_array <- q_array[, -which(is.na(colnames(q_array)))] # need this to remove extra values that break the whole thing
   q_array <- as.data.frame(t(rowsum(t(q_array), group = rownames(t(q_array)))))   # collate duplicate genes
   print("Duplicates removed")
   gene_metadata <- data.frame(matrix(0, nrow = ncol(q_array), ncol = 4), row.names = colnames(q_array))   # makes metadata array with slots for all metrics
