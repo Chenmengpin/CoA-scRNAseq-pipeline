@@ -2,10 +2,14 @@
 
 # Create a map of gene expression
 Plot_tSNE <- function(q_array, color_ids) {
-  cell_ids <- rownames(q_array)
-  coordinates <- Rtsne(q_array, is.distance = TRUE, verbose = TRUE, theta = 0.0)
+  umap_config <- umap.defaults
+  umap_config$n.neighbors <- 30
+  umap_config$n.epochs <- 1000
+  umap_config$input <- 'dist'
+  umap_config$verbose <- TRUE
+  coordinates <- umap(q_array)
   coordinates <- data.frame(coordinates$Y, row.names = cell_ids)
-  coordinates <- cbind.data.frame(coordinates, cluster_ids)
+  coordinates <- cbind.data.frame(coordinates, color_ids)
   colnames(coordinates) <- c("X_value", "Y_value", "Color")
   ggplot(data = coordinates, aes(x = X_value, y = Y_value, colour = Color)) +
     geom_point(size = 1) + 
@@ -15,7 +19,8 @@ Plot_tSNE <- function(q_array, color_ids) {
           axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
 }
 
-SC3_consensus_plot <- sc3_plot_consensus(sc3_input, cluster_number)   # saves the SC3 plot so it can be returned
+SC3_consensus_plot <- sc3_plot_consensus(sc3_input, cluster_number)   # saves the SC3 plots so it can be returned
+SC3_marker_genes <- sc3_plot_markers(sc3_clusters, k = 9) ####FIX THIS
 
 Plot_BinaryArray <- function(binary_regulon_array, cluster_id) {
   binary_regulon_heatmap <- binary_regulon_array

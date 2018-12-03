@@ -10,7 +10,7 @@ SC3clustering <- function(q_array) {
 }
 
 # Convert the SCESet output of SC3 into a consensus plot and assign clusters to metadata
-SC3Output <- function(sc3_input, sc3_clusters, m_array) {
+SC3Output <- function(sc3_clusters, m_array) {
   SC3_ids <- as.character(sc3_clusters) 
   m_array <- cbind.data.frame(m_array, SC3_ids)
   assign(paste0("SC3_metadata"), m_array, env = .GlobalEnv)
@@ -21,7 +21,7 @@ SCENIC_Export <- function(q_array) {
   q_array <- 2^q_array
   q_array <- q_array - 1  # removes the log2 normalization, converting into gene-summarized counts for SCENIC  
   q_array <- t(q_array) # convert to formatting for GENIE3
-  write.csv(q_array, file = "SCENIC_clustering/data/GENIE3_import.csv")
+  write.csv(q_array, file = "SCENIC_clustering/GENIE3_import.csv")
 }
 
 # imports the output of pySCENIC back into R

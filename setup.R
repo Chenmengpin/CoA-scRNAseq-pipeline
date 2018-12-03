@@ -8,7 +8,7 @@ library(MAST) # does differential gene expression analysis
 library(DropletUtils)   # for 10X data preprocessing
 library(scran)  # for quality control of single cell data
 library(scater)   # for quality control of single cell data
-library(DrImpute)   # for imputing probable dropout values
+library(SAVER)   # for imputing probable dropout values
 library(dplyr)  # for data manipulation
 library(AUCell)   # step 3 of SCENIC, for identifying gene set enrichment
 library(Rtsne)  # produces tSNE coordinates for visualization
@@ -21,10 +21,11 @@ library(reshape2) # for manipulating dataframes
 library(randomcoloR)  # gives consistent color output
 library(topGO) # for gene ontology analysis
 library(GO.db) # for GO networks
+library(colorRamps) # for QC plots
 
 # needed for WGCNA to work
 options(stringsAsFactors = FALSE)
-# enableWGCNAThreads(nThreads = 8)  # massively speeds up WGCNA, does not yet work in RStudio
+allowWGCNAThreads()  # massively speeds up WGCNA, does not yet work in RStudio
 
 # needed to allow data frames to remove NaNs
 is.nan.data.frame <- function(x){

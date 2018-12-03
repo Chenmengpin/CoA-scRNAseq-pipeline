@@ -1,5 +1,17 @@
 # Remove technical noise in each dataset
 
+# Impute dropouts
+ImputeDropouts <- function(q_array, id) {
+  cell_ids <- rownames(q_array)   # these ensure cell and gene info survives matrix transformation
+  gene_ids <- colnames(q_array)   
+  q_array <- t(q_array)   # SAVER requires a matrix with cells in columns and genes in rows
+  q_array[!is.finite(q_array)] <- 0
+  q_array <- saver(q_array, ncores = 5, size.factor = 1, estimates.only = TRUE) # do the imputation
+  q_array <- data.frame(t(q_array), row.names = cell_ids) # returns to metadata-compatible format
+  colnames(q_array) <- gene_ids
+  assign(paste0("imputed_quants",id), q_array, env = .GlobalEnv)  # returns original quant array identifier with modifier indicating normalization
+}
+
 # Compensating for batch effects and inter-individual variability
 PrepDatasets <- function(..., dataset_names, m_array_list, qc_m_array_list, gene_m_array_list) {
   q_array <- list(...)
@@ -49,26 +61,26 @@ BatchCorrect <- function(..., commongenes, combined_cell_ids) {
   assign("unified_quants", q_array, env = .GlobalEnv)
 }
 
-ImputeDropouts <- function(q_array, id) {
+# Filter down to highly variable genes for SC3 and edgeR
+FilterHVG <- function(q_array, gene_m_array) {
+  col_import <- cbind.data.frame(rownames(q_array), as.numeric(factor(m_array[,1])), as.numeric(factor(m_array[,2])))
+  colnames(col_import) <- c('cell_ids', 'batch', 'sample')
   cell_ids <- rownames(q_array)   # these ensure cell and gene info survives matrix transformation
   gene_ids <- colnames(q_array)   
-  q_array <- t(q_array)   # DrImpute requires a matrix with cells in columns and genes in rows
-  q_array <- DrImpute(q_array, ks = 10:30, # maximize number of k-values in case dataset is highly heterogeneous
-                      dists = c("spearman", "pearson", "euclidean")) # maximize number of distributions for better consensus
-  q_array <- data.frame(t(q_array), row.names = cell_ids) # returns to metadata-compatible format
+  sce_array <- SingleCellExperiment(assays = list(logcounts = t(q_array)), 
+                                    rowData = colnames(q_array), colData = col_import)
+  bv_trend <- trendVar(sce_array, block = sce_array$batch, parametric=TRUE, use.spikes = FALSE, min.mean = .0001)   # actually models variation
+  bv_array <- decomposeVar(sce_array, bv_trend) # fits the model to individual genes
+  q_array <- t(q_array)
+  q_array <- q_array[bv_array$FDR < .05, ]
+  gene_ids <- gene_ids[bv_array$FDR < .05]
+  q_array <- as.data.frame(t(q_array))   # needs to switch back for things to work
+  rownames(q_array) <- cell_ids
   colnames(q_array) <- gene_ids
-  assign(paste0("imputed_quants",id), q_array, env = .GlobalEnv)  # returns original quant array identifier with modifier indicating normalization
-}
-
-# Filter down to highly variable genes for SC3 and edgeR
-FilterHVG <- function(q_array, spike_ins, gene_m_array) {
-  q_array_cv2 <- t(q_array)
-  hvg_array <- improvedCV2(q_array_cv2, is.spike = spike_ins, log.prior = 1)
-  q_array <- q_array[, hvg_array$p.value < .05]
-  assign("HVG_quants", q_array, env = .GlobalEnv)
-  gene_m_array$row <- rownames(gene_m_array)    # add a 'helper' column for the merge function.
-  hvg_array$row <- rownames(hvg_array)
-  gene_m_array <- merge(gene_m_array, hvg_array, by='row', all=TRUE)
-  gene_m_array <- gene_m_array[, -c(1, 6, 7, 9)]
-  assign("HVGs_unified_gene_metadata", gene_m_array, env = .GlobalEnv)
+  subset <- colnames(unified_quants) %in% colnames(BVG_quants) # need this to avoid redundancies in the column assignments
+  q_array <- q_array[, subset]  
+  assign("BVG_quants", q_array, env = .GlobalEnv)
+  pass_bv_qc <- rownames(gene_m_array) %in% gene_ids
+  gene_m_array <- cbind.data.frame(gene_m_array, pass_bv_qc)
+  assign("BVG_unified_gene_metadata", gene_m_array, env = .GlobalEnv)
 }

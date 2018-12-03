@@ -45,6 +45,22 @@ GeneQC <- function(q_array, id) {
   assign(paste0("gene_metadata_",id), gene_metadata, env = .GlobalEnv)
 }
 
+#Mitochondrial quality control
+MitoQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
+  mt_fraction <- rowSums(q_array[, grepl('mt-', colnames(q_array))]) / rowSums(q_array)
+  print("Mitochondrial genes identified")
+  m_array <- cbind.data.frame(m_array, mt_fraction)
+  q_array <- q_array[mt_fraction < .2,]
+  m_array <- m_array[mt_fraction < .2,]
+  assign(paste0("mt_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
+  assign(paste0("mt_metadata_",id), m_array, env = .GlobalEnv)
+  print("Beginning metadata QC annotation")
+  mt_fraction <- rowSums(original_q_array[, grepl('mt-', colnames(original_q_array))]) / rowSums(original_q_array)
+  pass_mt_qc <- mt_fraction < .2
+  qc_m_array <- cbind.data.frame(qc_m_array, mt_fraction, pass_mt_qc)
+  assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
+}
+
 # Scaling by size factor
 NormalizeCountData <- function(q_array, m_array, id, qc_m_array) {
   method_id <- m_array[1,4]

@@ -59,27 +59,27 @@ DGE_WGCNA <- function(q_array, gene_metadata) {
   print("Refining module delineation")
   module_tree <- hclust(as.dist(inverse_TOMatrix), method = "average")
   module_ids <- cutreeDynamic(dendro = module_tree, distM = inverse_TOMatrix, deepSplit = 4)
-  #module_ids <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = bicor, verbose = 5)
+  module_ids_all <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = bicor, verbose = 5)
+  module_ids <- module_ids$colors
   print("Creating WGCNA module gene array for GO export")
-  module_array <- cbind.data.frame(colnames(q_array), module_ids$colors)
-  colnames(module_array) <- c("Gene", "Module")
+  gene_array <- colnames(q_array)
   WGCNA_GO_export <- list()
   genes_all <- rownames(gene_metadata)
   GO_frame <- rep(0, length = length(genes_all))  # creating an array for import into topGO
   names(GO_frame) <- genes_all
-  for (i in 1:max(module_ids$colors)) {
+  for (i in 1:max(module_ids)) {
     module_GO_frame <- GO_frame
-    module_GO_genes <- module_array$Gene[module_array$Module == i]
+    module_GO_genes <- gene_array[module_ids == i]
     module_GO_frame[names(module_GO_frame) %in% module_GO_genes] <- 1
     module_GO_frame <- factor(module_GO_frame)
     WGCNA_GO_export[[i]] <- module_GO_frame
-    names(WGCNA_GO_export) <- paste0("module", 1:max(module_ids$colors))
     print(i)
   }
-  CytoScape_WGCNA <- exportNetworkToCytoscape(adjacency_matrix, nodeAttr = module_array$Module,
-                                              edgeFile = "WGCNA_edge", nodeFile = "WGCNA_node")
+  names(WGCNA_GO_export) <- paste0("module", 1:max(module_ids))
+  #CytoScape_WGCNA <- exportNetworkToCytoscape(adjacency_matrix, nodeAttr = module_array$Module,
+  #                                            edgeFile = "WGCNA_edge", nodeFile = "WGCNA_node")
   assign("WGCNA_thresholds", file = threshold_list, env = .GlobalEnv)
   assign("WGCNA_hierarchy", file = module_tree, env = .GlobalEnv)
   assign("WGCNA_gene_clusters", file = module_ids, env = .GlobalEnv)
-  assign("WGCNA_GO_export", file = env = .GlobalEnv)
+  assign("WGCNA_GO", file = 'WGCNA_GO_export', env = .GlobalEnv)
 }

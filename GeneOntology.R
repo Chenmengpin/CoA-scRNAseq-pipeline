@@ -80,6 +80,7 @@ GetGOTerms <- function(gene_metadata) {
 GetEnrichedGO <- function(GO_genes, GO_mappings, GO_name) {
   Enriched_GOs <- list()
   for (i in 1:length(GO_genes)) {
+    if (nlevels(GO_genes[[i]]) == 2) {
     GO_data_BP <- new("topGOdata", ontology = "BP", allGenes = GO_genes[[i]],
                       annot = annFUN.gene2GO, gene2GO = GO_mappings)
     GO_data_MF <- new("topGOdata", ontology = "MF", allGenes = GO_genes[[i]],
@@ -106,7 +107,7 @@ GetEnrichedGO <- function(GO_genes, GO_mappings, GO_name) {
     enrichedGO <- enrichedGO[, -(3:5)]
     colnames(enrichedGO) <- c("GO ID", "GO Term", "P-value")
     Enriched_GOs[[i]] <- enrichedGO
-  }
+  } else { next }}
   names(Enriched_GOs) <- names(GO_genes)
   assign(GO_name, Enriched_GOs, env = .GlobalEnv)
 }
