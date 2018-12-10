@@ -7,17 +7,18 @@ PlotCellExclusionQC <- function(qc_m_array, group_id, colorlist) {
                 group_by(qc_m_array[, group_id]) %>%
                 summarize(Initial <- length(Sample), 
                           EmptyDroplets <- sum(pass_emptydrop_qc),
-                          LibrarySize <- sum(pass_library_qc),
                           GenesetSize <- sum(pass_gene_qc),
+                          LibrarySize <- sum(pass_library_qc),
+                          MitoFraction <- sum(mt_qc),
                           SizeFactors <- sum(pass_size_qc),
                           Final <- sum(pass_size_qc))
-  colnames(summary) <- c("Group", "0", "1", "2", "3", "4", "5")
+  colnames(summary) <- c("Group", "0", "1", "2", "3", "4", "5", "6")
   summary <- melt(summary)
   summary$variable <- as.numeric(summary$variable) - 1
   ggplot(data = summary, aes(x = variable, y = value, colour = Group)) + 
     geom_step(na.rm = TRUE, size = 1) + 
     scale_colour_manual(values = colorlist, name = colnames(qc_m_array[group_id])) +
-    scale_x_continuous(expand = c(0, 0), labels = c("Initial", "Empty Droplets", "Library Size", "Gene Detection", "Size Factors", "Final")) + 
+    scale_x_continuous(expand = c(0, 0), labels = c("Initial", "Empty Droplets", "Gene Detection", "Library Size", "Mitochondrial Fraction", "Size Factors", "Final")) + 
     scale_y_continuous(expand = c(0, 0), limits = c(0, (max(summary$value) * 1.1))) +
     xlab("Quality control checks") + ylab("Number of cells passing QC") + 
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
@@ -25,9 +26,9 @@ PlotCellExclusionQC <- function(qc_m_array, group_id, colorlist) {
 }
 
 # plot library sizes that were excluded based on QC
-PlotUMICountQC <- function(qc_m_array) {
-  qc_m_array$pass_library_qc <- ifelse(qc_m_array$pass_library_qc == TRUE, "Pass", "Low MAD outlier")
-  ggplot(data = qc_m_array, aes(library_size, fill = pass_library_qc)) +
+PlotUMICountQC <- function(library_array) {
+  library_array$library_qc <- ifelse(library_array$library_qc == TRUE, "Pass", "Low MAD outlier")
+  ggplot(data = library_array, aes(library_size, fill = library_qc)) +
     geom_histogram(binwidth = 500, colour = "black") +
     scale_fill_manual(values = c("red", "darkgrey"), name = "UMI Count QC Check") +
     scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
@@ -37,9 +38,9 @@ PlotUMICountQC <- function(qc_m_array) {
 }
 
 # plot geneset sizes that were excluded based on QC
-PlotGenesetQC <- function(qc_m_array) {
-  qc_m_array$pass_gene_qc <- ifelse(qc_m_array$pass_gene_qc == TRUE, "Pass", "Less than 1000 genes")
-  ggplot(data = qc_m_array, aes(geneset_size, fill = pass_gene_qc)) +
+PlotGenesetQC <- function(geneset_array) {
+  geneset_array$gene_qc <- ifelse(geneset_array$gene_qc == TRUE, "Pass", "Less than 1500 genes")
+  ggplot(data = geneset_array, aes(geneset_size, fill = gene_qc)) +
     geom_histogram(binwidth = 50, colour = "black") +
     scale_fill_manual(values = c("red", "darkgrey"), name = "Gene Detection QC Check") +
     scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
@@ -48,13 +49,13 @@ PlotGenesetQC <- function(qc_m_array) {
           legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom")
 }
 
-PlotMitoQC <- function(qc_m_array) {
-  qc_m_array$pass_mt_qc <- ifelse(qc_m_array$pass_mt_qc == TRUE, "Pass", "More than 20% mtRNA")
-  ggplot(data = qc_m_array, aes(mt_fraction, fill = pass_mt_qc)) +
+PlotMitoQC <- function(mt_array) {
+  mt_array$mt_qc <- ifelse(mt_array$mt_qc == TRUE, "Pass", "More than 12% mtRNA")
+  ggplot(data = mt_array, aes(mt_fraction, fill = mt_qc)) +
     geom_histogram(binwidth = .01, colour = "black") +
     scale_fill_manual(values = c("red", "darkgrey"), name = "Mitochondrial QC Check") +
     scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
-    xlab("Number of genes detected") + ylab("Number of cells") + 
+    xlab("Proportion of counts derived from mtRNA") + ylab("Number of cells") + 
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
           legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom")
 }

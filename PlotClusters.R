@@ -1,7 +1,7 @@
 # Contains plotting functions to use for identifying clusters of similar gene expression in the data
 
-# Create a map of gene expression
-Plot_tSNE <- function(q_array, color_ids) {
+# Create a map of gene expression/cluster IDs
+Plot_UMAP <- function(q_array, color_ids) {
   umap_config <- umap.defaults
   umap_config$n.neighbors <- 30
   umap_config$n.epochs <- 1000
