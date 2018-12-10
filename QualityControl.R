@@ -2,24 +2,31 @@
 
 # Cell-level quality control
 CellQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
-  library_size <- rowSums(q_array)
   geneset_size <- rowSums(q_array != 0)
+  gene_qc <- geneset_size > 1500
+  gene_m_array <- m_array[gene_qc == TRUE,] # these need to be separated so there can be a separate library size column in the QC array
+  m_array <- cbind.data.frame(m_array, geneset_size)   # add all library and geneset info to metadata
+  q_array <- q_array[gene_qc == TRUE, ]
+  library_size <- rowSums(q_array)
   library_qc <- !isOutlier(library_size, nmads = 3, type = "lower", log = TRUE)  # best to use negated versions for metadata import
-  gene_qc <- geneset_size > 1000
-  m_array <- cbind.data.frame(m_array, library_size, geneset_size)   # add all library and geneset info to metadata
-  q_array <- q_array[library_qc == TRUE & gene_qc == TRUE,]   # dual filters on library and geneset size, needs to pass both simultaneously here
-  library_m_array <- m_array[library_qc == TRUE,] # these need to be separated so there can be a separate library size column in the QC array
-  m_array <- library_m_array[gene_qc == TRUE,]
-  assign(paste0("cellqc_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
-  assign(paste0("GCqc_metadata_",id), m_array, env = .GlobalEnv)
+  q_array <- q_array[library_qc == TRUE, ]   # dual filters on library and geneset size, needs to pass both simultaneously here
+  m_array <- gene_m_array[library_qc == TRUE,]
+  m_array <- cbind.data.frame(m_array, library_size)   # add all library and geneset info to metadata
+  assign(paste0("CellQC_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
+  assign(paste0("CellQC_metadata_",id), m_array, env = .GlobalEnv)
+  print("Beginning array export for graphing")
+  library_array <- cbind.data.frame(library_size, library_qc)
+  geneset_array <- cbind.data.frame(geneset_size, gene_qc)
+  library_array <- library_array[gene_qc == TRUE, ]
+  assign(paste0("library_export_",id), library_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
+  assign(paste0("geneset_export_",id), geneset_array, env = .GlobalEnv)
   print("Beginning metadata QC annotation")
-  pass_library_qc <- is.element(rownames(qc_m_array), rownames(library_m_array))  # this is why there cannot be a simultaneous dual filter on library and geneset size
+  pass_library_qc <- is.element(rownames(qc_m_array), rownames(gene_m_array))  # this is why there cannot be a simultaneous dual filter on library and geneset size
   pass_gene_qc <- is.element(rownames(qc_m_array), rownames(m_array))
   library_size <- rowSums(original_q_array)   # recalculate for the QC graphs
   geneset_size <- rowSums(original_q_array != 0)
   qc_m_array <- cbind.data.frame(qc_m_array, library_size, pass_library_qc, geneset_size, pass_gene_qc)
   assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
-  
 }
 
 # Gene-level quality control
@@ -41,8 +48,8 @@ GeneQC <- function(q_array, id) {
   gene_metadata[,4] <- pass_cellnumber_qc
   q_array <- q_array[, cells_per_gene >= 3]
   print("QC finished")
-  assign(paste0("geneqc_quant_",id), q_array, env = .GlobalEnv)
-  assign(paste0("gene_metadata_",id), gene_metadata, env = .GlobalEnv)
+  assign(paste0("GeneQC_quant_",id), q_array, env = .GlobalEnv)
+  assign(paste0("GeneQC_metadata_",id), gene_metadata, env = .GlobalEnv)
 }
 
 #Mitochondrial quality control
@@ -50,15 +57,17 @@ MitoQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
   mt_fraction <- rowSums(q_array[, grepl('mt-', colnames(q_array))]) / rowSums(q_array)
   print("Mitochondrial genes identified")
   m_array <- cbind.data.frame(m_array, mt_fraction)
-  q_array <- q_array[mt_fraction < .2,]
-  m_array <- m_array[mt_fraction < .2,]
+  q_array <- q_array[mt_fraction < .12,]
+  m_array <- m_array[mt_fraction < .12,]
   assign(paste0("mt_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
   assign(paste0("mt_metadata_",id), m_array, env = .GlobalEnv)
   print("Beginning metadata QC annotation")
   mt_fraction <- rowSums(original_q_array[, grepl('mt-', colnames(original_q_array))]) / rowSums(original_q_array)
-  pass_mt_qc <- mt_fraction < .2
-  qc_m_array <- cbind.data.frame(qc_m_array, mt_fraction, pass_mt_qc)
+  mt_qc <- mt_fraction < .12
+  qc_m_array <- cbind.data.frame(qc_m_array, mt_fraction, mt_qc)
+  mt_array <- cbind.data.frame(mt_fraction, mt_qc)
   assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
+  assign(paste0("mt_export_",id), mt_array, env = .GlobalEnv)
 }
 
 # Scaling by size factor
@@ -88,6 +97,7 @@ NormalizeCountData <- function(q_array, m_array, id, qc_m_array) {
   q_array <- q_array + 1  # prevents undefined values for zeroes in log transformation
   q_array <- log2(q_array)  # log-transforms data to account for heteroscedasticity, log2 used because it is fine-grained and easy to represent fold changes
   m_array <- cbind.data.frame(m_array, size_factors[size_factors > 0])
+  colnames(m_array)[8] <- 'size_factor'
   assign(paste0("normalized_quant_",id), q_array, env = .GlobalEnv)  # returns original quant array identifier with modifier indicating normalization
   assign(paste0("normalized_metadata_",id), m_array, env = .GlobalEnv)
   print("Beginning metadata QC annotation")

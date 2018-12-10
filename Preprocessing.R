@@ -39,8 +39,8 @@ EmptyDropletQC_10X <- function(q_array, m_array, id, qc_m_array) {
     colnames(q_array) <- gene_ids
     q_array <- q_array[pass_emptydrop_qc == TRUE,]   # filters on droplet UMI amount, removes empty droplets
     m_array <- m_array[pass_emptydrop_qc == TRUE,]
-    assign(paste0("edqc_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
-    assign(paste0("edqc_metadata_",id), m_array, env = .GlobalEnv)
+    assign(paste0("EmptyDrop_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
+    assign(paste0("EmptyDrop_metadata_",id), m_array, env = .GlobalEnv)
     print("Beginning metadata QC annotation")
     pass_emptydrop_qc <- is.element(rownames(qc_m_array), rownames(m_array)) 
   }
