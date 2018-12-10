@@ -5,7 +5,7 @@ SC3clustering <- function(q_array) {
   sce_array <- SingleCellExperiment(assays = list(logcounts = t(q_array)), 
                               rowData = colnames(q_array), colData = rownames(q_array))
   rowData(sce_array)$feature_symbol <- colnames(q_array)
-  sc3output <- sc3(sce_array, gene_filter = FALSE, k_estimator = TRUE, kmeans_nstart = 1000)
+  sc3output <- sc3(sce_array, gene_filter = FALSE, k_estimator = TRUE, kmeans_nstart = 1000, svm_max = 500000)
   assign("sc3_clusters", sc3output, env = .GlobalEnv)
 }
 
