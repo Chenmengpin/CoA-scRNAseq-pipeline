@@ -60,7 +60,7 @@ DGE_WGCNA <- function(q_array, gene_metadata) {
   module_tree <- hclust(as.dist(inverse_TOMatrix), method = "average")
   module_ids <- cutreeDynamic(dendro = module_tree, distM = inverse_TOMatrix, deepSplit = 4)
   module_ids_all <- mergeCloseModules(exprData = q_array, colors = as.numeric(module_ids), corFnc = bicor, verbose = 5)
-  module_ids <- module_ids$colors
+  module_ids <- module_ids_all$colors
   print("Creating WGCNA module gene array for GO export")
   gene_array <- colnames(q_array)
   WGCNA_GO_export <- list()

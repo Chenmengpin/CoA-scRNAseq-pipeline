@@ -28,25 +28,47 @@ PlotCellExclusionQC <- function(qc_m_array, group_id, colorlist) {
 # plot library sizes that were excluded based on QC
 PlotUMICountQC <- function(library_array) {
   library_array$library_qc <- ifelse(library_array$library_qc == TRUE, "Pass", "Low MAD outlier")
-  ggplot(data = library_array, aes(library_size, fill = library_qc)) +
-    geom_histogram(binwidth = 500, colour = "black") +
-    scale_fill_manual(values = c("red", "darkgrey"), name = "UMI Count QC Check") +
-    scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
-    xlab("Total UMI count (non-normalized)") + ylab("Number of cells") + 
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
-          legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom")
+  if (length(unique(library_export$library_qc)) == 1) {
+    ggplot(data = library_array, aes(library_size, fill = library_qc)) +
+      geom_histogram(binwidth = 500, colour = "black") +
+      scale_fill_manual(values = c("darkgrey", "red"), name = "UMI Count QC Check") +
+      scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
+      xlab("Total UMI count (non-normalized)") + ylab("Number of cells") + 
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+            legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom") 
+  }
+  else {
+    ggplot(data = library_array, aes(library_size, fill = library_qc)) +
+      geom_histogram(binwidth = 500, colour = "black") +
+      scale_fill_manual(values = c("red", "darkgrey"), name = "UMI Count QC Check") +
+      scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
+      xlab("Total UMI count (non-normalized)") + ylab("Number of cells") + 
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+            legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom") 
+  }
 }
 
 # plot geneset sizes that were excluded based on QC
 PlotGenesetQC <- function(geneset_array) {
   geneset_array$gene_qc <- ifelse(geneset_array$gene_qc == TRUE, "Pass", "Less than 1500 genes")
-  ggplot(data = geneset_array, aes(geneset_size, fill = gene_qc)) +
-    geom_histogram(binwidth = 50, colour = "black") +
-    scale_fill_manual(values = c("red", "darkgrey"), name = "Gene Detection QC Check") +
-    scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
-    xlab("Number of genes detected") + ylab("Number of cells") + 
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
-          legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom")
+  if (length(unique(library_export$library_qc)) == 1) {
+    ggplot(data = geneset_array, aes(geneset_size, fill = gene_qc)) +
+      geom_histogram(binwidth = 50, colour = "black") +
+      scale_fill_manual(values = c("darkgrey", "red"), name = "Gene Detection QC Check") +
+      scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
+      xlab("Number of genes detected") + ylab("Number of cells") + 
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+            legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom")
+  }
+  else {
+    ggplot(data = geneset_array, aes(geneset_size, fill = gene_qc)) +
+      geom_histogram(binwidth = 50, colour = "black") +
+      scale_fill_manual(values = c("red", "darkgrey"), name = "Gene Detection QC Check") +
+      scale_x_continuous(expand = c(0, 0)) + scale_y_continuous(expand = c(0, 0)) +
+      xlab("Number of genes detected") + ylab("Number of cells") + 
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
+            legend.key=element_blank(), axis.line = element_line(colour = "black"), legend.position="bottom") 
+  }
 }
 
 PlotMitoQC <- function(mt_array) {
@@ -111,21 +133,6 @@ PlotGeneExclusionQC <- function(BV_gene_array) {
     xlab("Quality control checks") + ylab("Number of genes passing QC") + 
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
           legend.key=element_blank(), axis.line = element_line(colour = "black"))
-}
-
-# Create a map of gene expression
-Plot_tSNE_QC <- function(q_array, color_ids) {
-  cell_ids <- rownames(q_array)
-  coordinates <- Rtsne(q_array, is.distance = TRUE, verbose = TRUE, theta = 0.0)
-  coordinates <- data.frame(coordinates$Y, row.names = cell_ids)
-  coordinates <- cbind.data.frame(coordinates, color_ids)
-  colnames(coordinates) <- c("X_value", "Y_value", "Color")
-  ggplot(data = coordinates, aes(x = X_value, y = Y_value, colour = Color)) +
-    geom_point(size = 1) + scale_colour_gradientn(colours = matlab.like(10)) +
-    xlab("tSNE 1") + ylab("tSNE 2") +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(),
-          legend.key=element_blank(), axis.line = element_line(colour = "black"), axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank())
 }
 
 # plot the relationship between cells expressing a gene and its average expression

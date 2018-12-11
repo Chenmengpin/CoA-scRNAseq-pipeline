@@ -3,7 +3,7 @@
 # plot gene expression correlation across samples
 # 1 for correlation, 2 for number of genes
 Plot_Validation_Boxplots <- function(ValidationList, metric, label_list) {
-  metric_id <- match(metric, names(ValidationQC))
+  metric_id <- match(metric, names(ValidationList))
   plot_dataset <- ValidationList[[metric_id]]
   if (metric_id == 1) {
     y_label <- "R-value"
@@ -29,8 +29,8 @@ Plot_Validation_Boxplots <- function(ValidationList, metric, label_list) {
 # plot the representative graphs for each validation metric
 Plot_Validation_Scatter <- function(q_array, m_array, type, specific_x, specific_y, cell_num_x, cell_num_y) {
   type_id <- match(type, colnames(m_array))
-  q_array <- q_array[is.na(m_array$batch) == FALSE,]  # removes any possible NA values that could ruin analysis
-  m_array <- m_array[is.na(m_array$batch) == FALSE,]
+  q_array <- q_array[is.na(m_array$Batch) == FALSE,]  # removes any possible NA values that could ruin analysis
+  m_array <- m_array[is.na(m_array$Batch) == FALSE,]
   if (cell_num_x == 1) {
     cell_x <- sample(x = rownames(m_array)[m_array[, type_id] == specific_x], size = 1)  # identify samples to be randomly selected
     cell_x_match <- which(rownames(m_array) == cell_x)
@@ -38,7 +38,7 @@ Plot_Validation_Scatter <- function(q_array, m_array, type, specific_x, specific
     cell_x_label <- "Cell, Log(Counts + 1)"
   } else {
     cell_x <- sample(x = rownames(m_array)[m_array[, type_id] == specific_x], size = cell_num_x)
-    cell_x_match <- match(cell_1, rownames(m_array))
+    cell_x_match <- match(cell_x, rownames(m_array))
     cell_x_array <- q_array[cell_x_match,]
     cell_x_array <- as.numeric(colMeans(cell_x_array))
     cell_x_label <- "Cells, Mean(Log(Counts + 1))"
@@ -68,7 +68,7 @@ Plot_Validation_Scatter <- function(q_array, m_array, type, specific_x, specific
 
 # plot the p-values in a heatmap for each validation metric
 Plot_Validation_Heatmap <- function(ValidationList, metric) {
-  metric_id <- match(metric, names(ValidationQC))
+  metric_id <- match(metric, names(ValidationList))
   plot_dataset <- ValidationList[[metric_id]]
   if (metric_id == 3) {
     y_label <- "R-value"
@@ -76,9 +76,9 @@ Plot_Validation_Heatmap <- function(ValidationList, metric) {
     y_label <- "Genes"
   }
   plot_dataset <- melt(plot_dataset)
-  group_type <- as.character(rep(colnames(ValidationCorrelation), times = nlevels(plot_dataset$variable)))
+  group_type <- as.character(rep(unique(plot_dataset$variable), times = nlevels(plot_dataset$variable)))
   plot_dataset <- cbind.data.frame(plot_dataset, group_type) 
-  group_type <- as.character(rep(colnames(ValidationCorrelation), each = nlevels(plot_dataset$variable)))
+  group_type <- as.character(rep(unique(plot_dataset$variable), each = nlevels(plot_dataset$variable)))
   plot_dataset$variable <- group_type
   ggplot(plot_dataset, aes(x= variable, y = group_type, fill = -log10(value))) + 
     geom_tile() + xlab("") + ylab("") + 

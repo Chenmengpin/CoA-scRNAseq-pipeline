@@ -5,19 +5,21 @@ CellQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
   geneset_size <- rowSums(q_array != 0)
   gene_qc <- geneset_size > 1500
   gene_m_array <- m_array[gene_qc == TRUE,] # these need to be separated so there can be a separate library size column in the QC array
+  gene_m_array <- na.omit(gene_m_array)
   m_array <- cbind.data.frame(m_array, geneset_size)   # add all library and geneset info to metadata
-  q_array <- q_array[gene_qc == TRUE, ]
+  m_array <- m_array[gene_qc == TRUE,]
+  q_array <- q_array[gene_qc == TRUE,]   # this filters on geneset size
+  q_array <- na.omit(q_array)
   library_size <- rowSums(q_array)
   library_qc <- !isOutlier(library_size, nmads = 3, type = "lower", log = TRUE)  # best to use negated versions for metadata import
   q_array <- q_array[library_qc == TRUE, ]   # dual filters on library and geneset size, needs to pass both simultaneously here
-  m_array <- gene_m_array[library_qc == TRUE,]
+  m_array <- m_array[library_qc == TRUE,]
   m_array <- cbind.data.frame(m_array, library_size)   # add all library and geneset info to metadata
   assign(paste0("CellQC_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
   assign(paste0("CellQC_metadata_",id), m_array, env = .GlobalEnv)
   print("Beginning array export for graphing")
-  library_array <- cbind.data.frame(library_size, library_qc)
   geneset_array <- cbind.data.frame(geneset_size, gene_qc)
-  library_array <- library_array[gene_qc == TRUE, ]
+  library_array <- cbind.data.frame(library_size, library_qc)
   assign(paste0("library_export_",id), library_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
   assign(paste0("geneset_export_",id), geneset_array, env = .GlobalEnv)
   print("Beginning metadata QC annotation")
@@ -55,17 +57,19 @@ GeneQC <- function(q_array, id) {
 #Mitochondrial quality control
 MitoQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
   mt_fraction <- rowSums(q_array[, grepl('mt-', colnames(q_array))]) / rowSums(q_array)
+  mt_qc <- mt_fraction < .12
   print("Mitochondrial genes identified")
   m_array <- cbind.data.frame(m_array, mt_fraction)
-  q_array <- q_array[mt_fraction < .12,]
-  m_array <- m_array[mt_fraction < .12,]
+  q_array <- q_array[mt_qc == TRUE,]  # this actually does the filtering
+  m_array <- m_array[mt_qc == TRUE,]
   assign(paste0("mt_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
   assign(paste0("mt_metadata_",id), m_array, env = .GlobalEnv)
   print("Beginning metadata QC annotation")
   mt_fraction <- rowSums(original_q_array[, grepl('mt-', colnames(original_q_array))]) / rowSums(original_q_array)
-  mt_qc <- mt_fraction < .12
+  mt_qc <- is.element(rownames(qc_m_array), rownames(m_array))
   qc_m_array <- cbind.data.frame(qc_m_array, mt_fraction, mt_qc)
   mt_array <- cbind.data.frame(mt_fraction, mt_qc)
+  mt_array <- na.omit(mt_array)
   assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
   assign(paste0("mt_export_",id), mt_array, env = .GlobalEnv)
 }

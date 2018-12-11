@@ -16,10 +16,8 @@ WGCNA_Plot_SoftThreshold <- function(thresholds, metric_id, metric_label) {
 }
 
 WGCNA_Plot_ModuleTree <- function(module_tree, modules) {
-  image <- plotDendroAndColors(module_tree, modules, "Modules", dendroLabels = FALSE,
+  plotDendroAndColors(module_tree, modules, "Modules", dendroLabels = FALSE,
                       hang = 0.03, addGuide = TRUE, guideHang = 0.05)
-  dev.off()
-  return(image)
 }
 
 # plots the relationship between WGCNA gene modules and clusters in terms of R-squared
@@ -41,12 +39,10 @@ WGCNA_Plot_ModuleTraitSignificance <- function(modules, cluster_ids) {
 WGCNA_Plot_ModuleSignificance <- function(modules) {
   module_names <- modules$dendro$labels
   ModulePopSignificance <- corAndPvalue(x = modules$newMEs, y = modules$newMEs, alternative = "two.sided")
-  image <- labeledHeatmap(ModulePopSignificance$cor, colorLabels = FALSE, colors = matlab.like(50),
+  labeledHeatmap(ModulePopSignificance$cor, colorLabels = FALSE, colors = matlab.like(50),
                           xLabels = rownames(ModulePopSignificance$cor), 
                           yLabels = rownames(ModulePopSignificance$cor), 
                           xLabelsAngle = 90, setStdMargins = FALSE)  
-  dev.off()
-  return(image)
 }
 
 # plots relationship between WGCNA gene modules in terms of hierarchical clustering
