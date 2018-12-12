@@ -14,7 +14,8 @@ ImputeDropouts <- function(q_array, id) {
 
 # Compensating for batch effects and inter-individual variability
 PrepDatasets <- function(..., dataset_names, m_array_list, 
-                         qc_m_array_list, gene_m_array_list, library_m_array_list, geneset_m_array_list, mt_m_array_list) {
+                         qc_m_array_list, gene_m_array_list, library_m_array_list, 
+                         geneset_m_array_list, mt_m_array_list, doublet_m_array_list) {
   q_array <- list(...)
   cell_ids <- lapply(q_array, rownames)   # these ensure cell and gene info survives matrix transformation
   combined_cell_ids <<- Reduce(c, cell_ids) # concatenates all cell_id vectors in the list together
@@ -38,6 +39,7 @@ PrepDatasets <- function(..., dataset_names, m_array_list,
   library_m_array <- bind_rows(library_m_array_list)
   geneset_m_array <- bind_rows(geneset_m_array_list)
   mt_m_array <- bind_rows(mt_m_array_list)
+  doublet_m_array <- bind_rows(doublet_m_array_list)
   cells_per_gene <- Reduce("+", lapply(gene_m_array_list, "[[", 3))   # finds the sum of cells across all batches expressing the gene 
   pass_cellnumber_qc_every_batch <- Reduce(intersect, lapply(gene_m_array_list, function(x) x$pass_cellnumber_qc))
   for (i in 1:length(gene_m_array_list)) {  # gets total expression of each gene in each sample
@@ -58,18 +60,25 @@ PrepDatasets <- function(..., dataset_names, m_array_list,
   assign("unified_library_metadata_export", library_m_array, env = .GlobalEnv)
   assign("unified_geneset_metadata_export", geneset_m_array, env = .GlobalEnv)
   assign("unified_mt_metadata_export", mt_m_array, env = .GlobalEnv)
+  assign("unified_doublet_metadata_export", doublet_m_array, env = .GlobalEnv)
 }
 
-BatchCorrect <- function(..., commongenes, combined_cell_ids) {
+BatchCorrect <- function(..., commongenes, combined_cell_ids, ids) {
+  normal_array <- list(...)
+  names(normal_array) <- ids
+  normal_array <- bind_rows(normal_array)
+  rownames(normal_array) <- combined_cell_ids
+  normal_array <- normal_array[, colnames(normal_array) %in% commongenes]
   q_array <- mnnCorrect(...)
   q_array <- as.data.frame(q_array$corrected)   # unify the batch corrected quant arrays
   q_array <- as.data.frame(t(q_array), row.names = combined_cell_ids)  # make the quant array into a dataframe and label it for compatibility
   colnames(q_array) <- commongenes
-  assign("unified_quants", q_array, env = .GlobalEnv)
+  assign("unified_cluster_quants", q_array, env = .GlobalEnv)
+  assign('unified_DEG_quants', normal_array, env = .GlobalEnv)
 }
 
-# Filter down to highly variable genes for SC3 and edgeR
-FilterBVG <- function(q_array, m_array, gene_m_array) {
+# Filter down to highly variable genes for Seurat and edgeR
+FilterBVG <- function(q_array, batch_array, m_array, gene_m_array) {
   col_import <- cbind.data.frame(rownames(q_array), as.numeric(factor(m_array[,1])), as.numeric(factor(m_array[,2])))
   colnames(col_import) <- c('cell_ids', 'batch', 'sample')
   cell_ids <- rownames(q_array)   # these ensure cell and gene info survives matrix transformation
@@ -82,12 +91,14 @@ FilterBVG <- function(q_array, m_array, gene_m_array) {
   print("Variance modeled")
   q_array <- t(q_array)
   q_array <- q_array[bv_array$FDR < .05, ]
+  batch_array <- batch_array[bv_array$FDR < .05, ]
   gene_ids <- gene_ids[bv_array$FDR < .05]
   q_array <- as.data.frame(t(q_array))   # needs to switch back for things to work
   rownames(q_array) <- cell_ids
   colnames(q_array) <- gene_ids
   print("Genes filtered")
-  assign("BVG_quants", q_array, env = .GlobalEnv)
+  assign("BVG_DEG_quants", q_array, env = .GlobalEnv)
+  assign("BVG_cluster_quants", batch_array, env = .GlobalEnv)
   pass_bv_qc <- rownames(gene_m_array) %in% gene_ids
   gene_m_array <- cbind.data.frame(gene_m_array, pass_bv_qc)
   assign("BVG_unified_gene_metadata", gene_m_array, env = .GlobalEnv)

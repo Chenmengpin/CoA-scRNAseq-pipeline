@@ -11,8 +11,8 @@ library(scater)   # for quality control of single cell data
 library(SAVER)   # for imputing probable dropout values
 library(dplyr)  # for data manipulation
 library(AUCell)   # step 3 of SCENIC, for identifying gene set enrichment
-library(Rtsne)  # produces tSNE coordinates for visualization
-library(SC3)  # for clustering on gene expression
+library(umap)  # produces UMAP coordinates for visualization
+library(Seurat)  # for clustering on gene expression
 library(WGCNA)  # finding weighted gene correlation networks
 library(dynamicTreeCut)   # for creating improved hierarchical clusters of gene modules
 library(ggplot2)  # for making plots

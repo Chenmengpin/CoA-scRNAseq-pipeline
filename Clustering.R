@@ -1,14 +1,22 @@
 # produces cell coordinates, does clustering via SC3 and SCENIC
 
 # Cluster the cells based on gene expression
-SC3clustering <- function(q_array) {
+seurat_clustering <- function(q_array) {
+  q_array <- t(q_array)
+  seurat_array <- CreateSeuratObject(q_array)
+  seurat_array <- ScaleData(seurat_array, do.scale = FALSE, do.center = FALSE)
+  seurat_array <- RunPCA(seurat_array, pc.genes = rownames(seurat_array@data), pcs.compute = 50)
+  seurat_array <- FindClusters(seurat_array, dims.use = 1:50, resolution = 1.5, algorithm = 2, n.start = 100, n.iter = 100)
+  assign('Seurat_clusters', seurat_array, env = .GlobalEnv)
+}
+
+  seurat_array <- FindClusters(seurat_array, reduction.type = 'pca', save.SNN = TRUE, )
   sce_array <- SingleCellExperiment(assays = list(logcounts = t(q_array)), 
                               rowData = colnames(q_array), colData = rownames(q_array))
   rowData(sce_array)$feature_symbol <- colnames(q_array)
   sc3output <- sc3(sce_array, gene_filter = FALSE, k_estimator = TRUE, kmeans_nstart = 1000, 
                    svm_max = 100000, svm_num_cells = length(rownames(q_array)))
   assign("sc3_clusters", sc3output, env = .GlobalEnv)
-}
 
 # Convert the SCESet output of SC3 into a consensus plot and assign clusters to metadata
 SC3Output <- function(sc3_clusters, m_array) {

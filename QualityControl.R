@@ -64,14 +64,13 @@ MitoQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
   m_array <- m_array[mt_qc == TRUE,]
   assign(paste0("mt_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
   assign(paste0("mt_metadata_",id), m_array, env = .GlobalEnv)
+  mt_array <- cbind.data.frame(mt_fraction, mt_qc)
+  assign(paste0("mt_export_",id), mt_array, env = .GlobalEnv)
   print("Beginning metadata QC annotation")
   mt_fraction <- rowSums(original_q_array[, grepl('mt-', colnames(original_q_array))]) / rowSums(original_q_array)
   mt_qc <- is.element(rownames(qc_m_array), rownames(m_array))
   qc_m_array <- cbind.data.frame(qc_m_array, mt_fraction, mt_qc)
-  mt_array <- cbind.data.frame(mt_fraction, mt_qc)
-  mt_array <- na.omit(mt_array)
   assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
-  assign(paste0("mt_export_",id), mt_array, env = .GlobalEnv)
 }
 
 # Scaling by size factor
@@ -111,5 +110,24 @@ NormalizeCountData <- function(q_array, m_array, id, qc_m_array) {
   qc_m_array <- merge(qc_m_array, size_factors_dataframe, by='row', all=TRUE)
   qc_m_array[is.na(qc_m_array)] <- 0
   qc_m_array <- qc_m_array[, -1]
+  assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
+}
+
+DoubletQC <- function(q_array, m_array, id, qc_m_array, original_q_array) {
+  q_array <- t(q_array)
+  doublet_score <- doubletCells(q_array, force.match = TRUE)
+  doublet_qc <- doublet_score < quantile(doublet_score, .99)
+  print("Doublets removed")
+  q_array <- q_array[doublet_qc == TRUE,]
+  m_array <- m_array[doublet_qc == TRUE,]
+  assign(paste0("doublet_quant_",id), q_array, env = .GlobalEnv)   # these need to be made like this so that it returns both with custom names
+  assign(paste0("doublet_metadata_",id), m_array, env = .GlobalEnv)
+  print("Beginning metadata QC annotation")
+  doublet_array <- cbind.data.frame(doublet_score, doublet_qc)
+  assign(paste0("doublet_export_",id), doublet_array, env = .GlobalEnv)
+  original_q_array <- t(original_q_array)
+  doublet_score <- doubletCells(original_q_array, force.match = TRUE)
+  doublet_qc <- is.element(rownames(qc_m_array), rownames(m_array))
+  qc_m_array <- cbind.data.frame(qc_m_array, doublet_score, doublet_qc)
   assign(paste0("QC_metadata_",id), qc_m_array, env = .GlobalEnv)
 }

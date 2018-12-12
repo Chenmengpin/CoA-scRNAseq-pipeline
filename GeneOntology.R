@@ -93,20 +93,24 @@ GetEnrichedGO <- function(GO_genes, GO_mappings, GO_name) {
     resultTable_BP <- GenTable(GO_data_BP, classic = resultFisher_BP, orderBy = "classic", 
                             ranksOf = "classic", topNodes = length(usedGO(GO_data_BP)))
     resultTable_BP$classic <- p.adjust(resultTable_BP$classic, method = "BH")
+    resultTable_BP$type <- "BP"
     resultFisher_MF <- getSigGroups(GO_data_MF, test.stat = GOtest)
     resultTable_MF <- GenTable(GO_data_MF, classic = resultFisher_MF, orderBy = "classic", 
                                ranksOf = "classic", topNodes = length(usedGO(GO_data_MF)))
     resultTable_MF$classic <- p.adjust(resultTable_MF$classic, method = "BH")
+    resultTable_MF$type <- "MF"
     resultFisher_CC <- getSigGroups(GO_data_CC, test.stat = GOtest)
     resultTable_CC <- GenTable(GO_data_CC, classic = resultFisher_CC, orderBy = "classic", 
                                ranksOf = "classic", topNodes = length(usedGO(GO_data_CC)))
     resultTable_CC$classic <- p.adjust(resultTable_CC$classic, method = "BH")
+    resultTable_CC$type <- "CC"
     enrichedGO <- rbind.data.frame(resultTable_BP[resultTable_BP$classic < .05,],
                                    resultTable_MF[resultTable_MF$classic < .05,],
                                    resultTable_CC[resultTable_CC$classic < .05,])
     enrichedGO <- enrichedGO[, -(3:5)]
-    colnames(enrichedGO) <- c("GO ID", "GO Term", "P-value")
+    colnames(enrichedGO) <- c("GO ID", "GO Term", "P-value", "GO Class")
     Enriched_GOs[[i]] <- enrichedGO
+    print(i)
   } else { next }}
   names(Enriched_GOs) <- names(GO_genes)
   assign(GO_name, Enriched_GOs, env = .GlobalEnv)

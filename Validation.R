@@ -2,12 +2,12 @@
 
 # run the validation script
 ValidateQC <- function(q_array, m_array) {
-  q_array <- q_array[is.na(m_array$batch) == FALSE,]  # removes any possible NA values that could ruin analysis
-  m_array <- m_array[is.na(m_array$batch) == FALSE,]
-  dim_number <- sum(length(unique(m_array$batch)), choose(length(unique(m_array$batch)), 2), 
-                    length(unique(m_array$sample)), choose(length(unique(m_array$sample)), 2),
-                    length(unique(m_array$region)), choose(length(unique(m_array$region)), 2),
-                    length(unique(m_array$method)), choose(length(unique(m_array$method)), 2))  # tallies up total number of types of pairwise comparisons to make
+  q_array <- q_array[is.na(m_array$Batch) == FALSE,]  # removes any possible NA values that could ruin analysis
+  m_array <- m_array[is.na(m_array$Batch) == FALSE,]
+  dim_number <- sum(length(unique(m_array$Batch)), choose(length(unique(m_array$Batch)), 2), 
+                    length(unique(m_array$Sample)), choose(length(unique(m_array$Sample)), 2),
+                    length(unique(m_array$Region)), choose(length(unique(m_array$Region)), 2),
+                    length(unique(m_array$Method)), choose(length(unique(m_array$Method)), 2))  # tallies up total number of types of pairwise comparisons to make
   ValidationCorrelation <- data.frame(matrix(0, nrow = 100, ncol = dim_number * 6))   # creates target matrix to put values into
   ValidationGenes <- data.frame(matrix(0, nrow = 100, ncol = dim_number * 6))
   iteration_number <- 1

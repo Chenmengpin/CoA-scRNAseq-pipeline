@@ -35,9 +35,6 @@ UMAP_continuous <- function(coordinates, color_ids, measure_id) {
           axis.ticks.x=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) 
 }
 
-SC3_consensus_plot <- sc3_plot_consensus(sc3_input, cluster_number)   # saves the SC3 plots so it can be returned
-SC3_marker_genes <- sc3_plot_markers(sc3_clusters, k = 9) ####FIX THIS
-
 Plot_BinaryArray <- function(binary_regulon_array, cluster_id) {
   binary_regulon_heatmap <- binary_regulon_array
   binary_regulon_heatmap <- data.frame(t(binary_regulon_array))
